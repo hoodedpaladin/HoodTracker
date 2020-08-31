@@ -1,14 +1,23 @@
-from World import World
 import os
+import sys
+import re
+import argparse
+
+# Make OoTR work as a submodule in a dir called ./OoT-Randomizer
+try:
+    from World import World
+except ModuleNotFoundError:
+    ootr_path = os.path.join(os.getcwd(), "OoT-Randomizer")
+    if ootr_path not in sys.path:
+        sys.path.append(ootr_path)
+    from World import World
 from Utils import data_path
 from DungeonList import create_dungeons
 import ItemPool
 import TextSettings
 import EntranceShuffle
-import re
 import SettingsList
 from Item import ItemFactory
-import argparse
 from Settings import Settings, ArgumentDefaultsHelpFormatter
 import AutoGrotto
 
