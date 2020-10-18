@@ -1,7 +1,9 @@
+#!/usr/bin/env python3
 import os
 import sys
 import re
 import argparse
+from CommonUtils import *
 
 # Make OoTR work as a submodule in a dir called ./OoT-Randomizer
 try:
@@ -138,7 +140,7 @@ def filterLocations(locked_locations, possible_locations, reachable_regions, sta
 
     return changes
 
-# If the item type is an event, fixed location, or drop, collected it automatically
+# If the item type is an event, fixed location, or drop, collect it automatically
 def autocollect(possible_locations, collected_locations, state):
     collect_items = []
     move_locs = []
@@ -194,10 +196,6 @@ def solve(world, starting_region='Root'):
 
     return {'please_explore':list(set(please_explore)), 'possible_locations':possible_locations, 'adult_reached':adult_reached, 'child_reached':child_reached}
 
-def expectOne(vals):
-    assert len(vals) == 1
-    return vals[0]
-
 # Mark all exits shuffled that would be shuffled according to the settings
 def shuffleExits(world):
     types = []
@@ -244,7 +242,7 @@ def fillKnownExits(world, known_exits):
     # List all of the simply paired connections
     simple_pairs = {}
     for x in EntranceShuffle.entrance_shuffle_table:
-        if x[0] not in ['Grotto', 'Grave', 'SpecialGrove', 'Interior', 'Dungeon']:
+        if x[0] not in ['Grotto', 'Grave', 'SpecialGrave', 'Interior', 'Dungeon']:
             continue
         simple_pairs[x[1][0]] = x[2][0]
 
@@ -262,11 +260,11 @@ def fillKnownExits(world, known_exits):
         exit = expectOne([x for x in all_exits if x.name == name])
         dest_region = world.get_region(dest_name)
         if exit.shuffled:
-            exit.connected_region = dest_region
+            exit.connected_region = dest_region.name
             exit.shuffled = False
             output_known_exits[str(exit)] = str(dest_region)
         else:
-            assert exit.connected_region == dest_region
+            assert exit.connected_region == dest_region.name
 
         # If it's a simple pair, automatically fill in the reverse
         if name in simple_pairs:
@@ -278,11 +276,11 @@ def fillKnownExits(world, known_exits):
             other_exit_name = simple_pairs[other_entrance]
             other_exit = expectOne([x for x in all_exits if x.name == other_exit_name])
             if other_exit.shuffled:
-                other_exit.connected_region = exit.parent_region
+                other_exit.connected_region = exit.parent_region.name
                 other_exit.shuffled = False
                 output_known_exits[str(other_exit)] = str(exit.parent_region)
             else:
-                assert other_exit.connected_region == exit.parent_region
+                assert other_exit.connected_region == exit.parent_region.name
     return output_known_exits
 
 #What to display to the user as un-collected items
