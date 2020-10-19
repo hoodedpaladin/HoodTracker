@@ -5,6 +5,7 @@ import ExploreManager
 import LocationManager
 import HoodTracker
 import ItemPool
+import RouteFinder
 
 class DisplayWindow(QtWidgets.QMainWindow):
     def __init__(self, invManager, exploreManager, locManager, world):
@@ -31,6 +32,10 @@ class DisplayWindow(QtWidgets.QMainWindow):
         fullcanvas = QtWidgets.QWidget()
         fullcanvas.setLayout(split)
         self.setCentralWidget(fullcanvas)
+
+        self.find_path_action = QtWidgets.QAction("&Find Path", self)
+        self.find_path_action.setShortcut('Ctrl+F')
+        self.menuBar().addAction(self.find_path_action)
 
 def doWeWantThisLoc(loc, world):
     # Events / drops / gossipstones / fixed locations are auto-collected
@@ -82,7 +87,8 @@ class HoodTrackerGui:
         self.exploreManager.showThese(self.output_data['please_explore'], self.world, self.output_known_exits)
 
         window = DisplayWindow(invManager=self.invManager, exploreManager=self.exploreManager, locManager=self.locManager, world=self.world)
-
+        self.find_path_dialog = RouteFinder.FindPathDialog(all_regions=[x.name for x in self.world.regions], parent=self)
+        window.find_path_action.triggered.connect(self.launch_pathfind_dialog)
         window.show()
 
         app.exec_()
@@ -101,6 +107,9 @@ class HoodTrackerGui:
         output_data = HoodTracker.solve(self.world)
         self.locManager.updateLocationPossible(output_data['possible_locations'])
         self.exploreManager.showThese(output_data['please_explore'], self.world, self.output_known_exits)
+
+    def launch_pathfind_dialog(self):
+        self.find_path_dialog.show()
 
 if __name__ == "__main__":
     hoodgui = HoodTrackerGui("output.txt")
