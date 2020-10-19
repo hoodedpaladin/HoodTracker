@@ -88,12 +88,12 @@ def getFromListByName(thelist, name):
     return expectOne([x for x in thelist if x.name == name])
 
 class ExploreManager:
-    def __init__(self, world):
+    def __init__(self, world, parent):
         self.explorations = []
         self.widget = GuiUtils.ScrollSettingsArea(widgets = self.explorations)
         self.widget.setVisible(len(self.explorations) > 0)
         self.world = world
-        self.parent = None
+        self.parent = parent
 
         all_exits = [x for region in world.regions for x in region.exits]
         all_destination_names = set(x.parent_region.name for x in all_exits)
@@ -131,9 +131,10 @@ class ExploreManager:
                 self.backwards_substitute[sub_name] = []
             self.backwards_substitute[sub_name].append(destination)
 
-    def showThese(self, please_explore, world):
+    def showThese(self, please_explore, world, known_exits):
         # Sort the exit names
         please_explore = sorted(please_explore, key=str.casefold)
+        known_labels = sorted([exit + " goesto " + dest for exit,dest in known_exits.items()], key=str.casefold)
 
         all_exits = [x for region in world.regions for x in region.exits]
 
@@ -176,6 +177,8 @@ class ExploreManager:
             widget = ExploreBox(text=exit_name, options=possible, parent=self)
             new_widgets.append(widget)
 
+        for known in known_labels:
+            new_widgets.append(QtWidgets.QLabel(known))
         self.widget.setNewWidgets(new_widgets)
         self.explorations = new_widgets
         self.widget.setVisible(len(self.explorations) > 0)

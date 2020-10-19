@@ -90,7 +90,7 @@ class InventoryBox(QWidget):
         self.minusspacer.setVisible(not(self.current > 0))
 
 class InventoryManager:
-    def __init__(self, inventory, parent=None):
+    def __init__(self, inventory, parent):
         self.inv_widgets = [InventoryBox(name=x.name, max=x.max, current=x.current, parent=self) for x in inventory]
         self.widget = GuiUtils.ScrollSettingsArea(widgets=self.inv_widgets)
         self.parent = parent

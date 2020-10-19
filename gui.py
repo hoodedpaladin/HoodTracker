@@ -7,14 +7,9 @@ import HoodTracker
 import ItemPool
 
 class DisplayWindow(QtWidgets.QMainWindow):
-    # TODO: move status variables from DisplayWindow to HoodTrackerGui
-    def __init__(self, invManager, exploreManager, locManager, world, parent):
+    def __init__(self, invManager, exploreManager, locManager, world):
         super().__init__()
-        self.invManager = invManager
-        self.exploreManager = exploreManager
-        self.locManager = locManager
         self.world = world
-        self.parent = parent
 
         self.setWindowTitle('HoodTracker')
         self.resize(1500, 1200)
@@ -36,16 +31,6 @@ class DisplayWindow(QtWidgets.QMainWindow):
         fullcanvas = QtWidgets.QWidget()
         fullcanvas.setLayout(split)
         self.setCentralWidget(fullcanvas)
-
-    def updateLogic(self):
-        # Reset inventory to the state of the invManager
-        self.world.state.prog_items = self.invManager.getProgItems(free_scarecrow=self.world.free_scarecrow, free_epona=self.world.no_epona_race)
-        output_data = HoodTracker.solve(self.world)
-        self.locManager.updateLocationPossible(output_data['possible_locations'])
-        self.exploreManager.showThese(output_data['please_explore'], self.world)
-
-    def addKnownExit(self, exit_name, destination_name):
-        self.parent.addKnownExit(exit_name, destination_name)
 
 def doWeWantThisLoc(loc, world):
     # Events / drops / gossipstones / fixed locations are auto-collected
@@ -74,7 +59,7 @@ class HoodTrackerGui:
     def run(self):
         app = QtWidgets.QApplication(sys.argv)
 
-        self.invManager = InventoryManager.InventoryManager(inventory=InventoryManager.makeInventory(max_starting=self.override_inventory))
+        self.invManager = InventoryManager.InventoryManager(inventory=InventoryManager.makeInventory(max_starting=self.override_inventory), parent=self)
         if not self.override_inventory:
             for item in self.input_data['equipment']:
                 self.invManager.collectItem(item)
@@ -90,27 +75,32 @@ class HoodTrackerGui:
             possible = loc in self.output_data['possible_locations']
             checked = loc.name in self.input_data['checked_off']
             locations_from_tracker.append(LocationManager.LocationEntry(loc_name=loc.name, txt=name, possible=possible, checked=checked))
-        locManager = LocationManager.LocationManager(locations=locations_from_tracker)
+        self.locManager = LocationManager.LocationManager(locations=locations_from_tracker)
 
 
-        self.exploreManager = ExploreManager.ExploreManager(self.world)
-        self.exploreManager.showThese(self.output_data['please_explore'], self.world)
+        self.exploreManager = ExploreManager.ExploreManager(self.world, parent=self)
+        self.exploreManager.showThese(self.output_data['please_explore'], self.world, self.output_known_exits)
 
-        window = DisplayWindow(invManager=self.invManager, exploreManager=self.exploreManager, locManager=locManager, world=self.world, parent=self)
-        self.invManager.parent = window
-        self.exploreManager.parent = window
+        window = DisplayWindow(invManager=self.invManager, exploreManager=self.exploreManager, locManager=self.locManager, world=self.world)
 
         window.show()
 
         app.exec_()
 
         self.input_data['equipment'] = self.invManager.getOutputFormat()
-        self.input_data['checked_off'] = locManager.getOutputFormat()
+        self.input_data['checked_off'] = self.locManager.getOutputFormat()
         if self.save_enabled:
             HoodTracker.writeResultsToFile(self.world, self.input_data, self.output_data, self.output_known_exits, self.filename)
 
     def addKnownExit(self, exit_name, destination_name):
         self.output_known_exits[exit_name] = destination_name
+
+    def updateLogic(self):
+        # Reset inventory to the state of the invManager
+        self.world.state.prog_items = self.invManager.getProgItems(free_scarecrow=self.world.free_scarecrow, free_epona=self.world.no_epona_race)
+        output_data = HoodTracker.solve(self.world)
+        self.locManager.updateLocationPossible(output_data['possible_locations'])
+        self.exploreManager.showThese(output_data['please_explore'], self.world, self.output_known_exits)
 
 if __name__ == "__main__":
     hoodgui = HoodTrackerGui("output.txt")
