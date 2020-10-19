@@ -197,6 +197,10 @@ class ExploreManager:
             check_these = self.overworld_to_overworld
             leading_to = [x for x in check_these if not x.shuffled and x.connected_region == destination_name]
             assert len(leading_to) < overworld_destinations[destination_name]
+
+            # overworld connections that are unique can have the reverse automatically filled in
+            if overworld_destinations[destination_name] == 1:
+                reverse_exit = expectOne([x for x in self.overworld_to_overworld if x.parent_region.name == destination_name])
         elif exit in one_entrance_places:
             # Find the matching destination that has no exit leading to it yet.
             # If destination_name is an automatic substitute, backwards_substitute will return a list of all such
