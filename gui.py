@@ -5,7 +5,7 @@ import ExploreManager
 import LocationManager
 import HoodTracker
 import ItemPool
-import RouteFinder
+import FindPath
 
 class DisplayWindow(QtWidgets.QMainWindow):
     def __init__(self, invManager, exploreManager, locManager, world):
@@ -87,7 +87,7 @@ class HoodTrackerGui:
         self.exploreManager.showThese(self.output_data['please_explore'], self.world, self.output_known_exits)
 
         window = DisplayWindow(invManager=self.invManager, exploreManager=self.exploreManager, locManager=self.locManager, world=self.world)
-        self.find_path_dialog = RouteFinder.FindPathDialog(all_regions=[x.name for x in self.world.regions], parent=self)
+        self.find_path_dialog = FindPath.FindPathDialog(all_regions=[x.name for x in self.world.regions], parent=self)
         window.find_path_action.triggered.connect(self.launch_pathfind_dialog)
         window.show()
 
