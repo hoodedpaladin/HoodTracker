@@ -18,6 +18,7 @@ total_equipment = ItemPool.item_groups['ProgressItem'] + ItemPool.item_groups['S
     'Progressive Strength Upgrade',
     'Progressive Scale',
     'Progressive Wallet',
+    'Blue Fire',
 ] + list(ItemPool.tradeitems)
 
 item_limits = Counter()

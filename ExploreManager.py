@@ -67,7 +67,7 @@ class ExploreBox(QtWidgets.QWidget):
         self.combo = b
 
     def combo_select_event(self, x):
-        if self.combo.currentText == "?":
+        if self.combo.currentText() == "?":
             return
         self.setParent(None)
         self.parent.setKnownExit(self.text, self.combo.currentText())
