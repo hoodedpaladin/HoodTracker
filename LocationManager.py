@@ -4,6 +4,7 @@ from PySide2.QtGui import *
 import EntranceShuffle
 import re
 from CommonUtils import *
+import logging
 
 class LocationManager:
     def __init__(self, locations, world):
@@ -117,6 +118,7 @@ class LocationEntry(TableEntry):
         new_checked = self.isChecked()
         if self.currently_checked == new_checked:
             return
+        logging.info("User has {}checked {}".format("" if new_checked else "un", self.loc_name))
         self.currently_checked = new_checked
         self.parent().takeRow(self.row())
         self._parent.addLocation(self, first=True)

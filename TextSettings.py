@@ -1,3 +1,4 @@
+import logging
 
 def writeToFile(data, filename, priorities = []):
     message = ""
@@ -8,8 +9,10 @@ def writeToFile(data, filename, priorities = []):
             message += str(val) + "\n"
         message += "\n"
 
+    logging.info("Writing to file {}...".format(filename))
     with open(filename, "w") as f:
         f.write(message)
+    logging.info("Done writing to {}.".format(filename))
 
 def readFromFile(filename):
     data = dict()
@@ -17,9 +20,12 @@ def readFromFile(filename):
     f = open(filename, "r")
     lines = f.read().splitlines()
 
+    logging.info("Getting input from {}".format(filename))
+
     category = None
     for line in lines:
         line.rstrip()
+        logging.info(line)
         if line == "":
             category = None
             continue

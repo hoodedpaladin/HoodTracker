@@ -6,6 +6,9 @@ import LocationManager
 import HoodTracker
 import ItemPool
 import FindPath
+import logging
+import datetime
+import os
 
 class DisplayWindow(QtWidgets.QMainWindow):
     def __init__(self, invManager, exploreManager, locManager, world):
@@ -124,5 +127,11 @@ class HoodTrackerGui:
         self.find_path_dialog.show()
 
 if __name__ == "__main__":
+    log_dir = 'Logs'
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+    logfile_name = datetime.datetime.now().strftime('logfile_%Y-%m-%d %H-%M-%S.log')
+    logging.basicConfig(filename=os.path.join(log_dir, logfile_name), level=logging.INFO)
     hoodgui = HoodTrackerGui("output.txt")
     hoodgui.run()

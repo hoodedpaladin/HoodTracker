@@ -3,6 +3,7 @@ import ItemPool
 from PySide2.QtWidgets import *
 import GuiUtils
 from CommonUtils import *
+import logging
 
 total_equipment = ItemPool.item_groups['ProgressItem'] + ItemPool.item_groups['Song'] + ItemPool.item_groups['DungeonReward'] + [
     'Bombchu Drop',
@@ -74,12 +75,18 @@ class InventoryBox(QWidget):
         self.updateWidgets()
 
     def plusEvent(self, x):
-        self.current = min(self.current + 1, self.max)
+        if (self.current >= self.max):
+            return
+        self.current = self.current + 1
+        logging.info("User has increased {} to {}".format(self.name, self.current))
         self.updateWidgets()
         self.parent.update(self)
 
     def minusEvent(self, x):
-        self.current = max(0, self.current - 1)
+        if (self.current < 1):
+            return
+        self.current = self.current - 1
+        logging.info("User has decreased {} to {}".format(self.name, self.current))
         self.updateWidgets()
         self.parent.update(self)
 

@@ -5,6 +5,7 @@ from CommonUtils import *
 import EntranceShuffle
 import AutoGrotto
 from collections import Counter
+import logging
 
 # This is the intended number of overworld entrances to a certain region
 overworld_destinations = {
@@ -70,7 +71,11 @@ class ExploreBox(QtWidgets.QWidget):
         if self.combo.currentText() == "?":
             return
         self.setParent(None)
-        self.parent.setKnownExit(self.text, self.combo.currentText())
+
+        exit = self.text
+        destination = self.combo.currentText()
+        logging.info("User has indicated that {} goesto {}".format(exit, destination))
+        self.parent.setKnownExit(exit, destination)
 
 substitute_regions = {}
 substitute_regions['Auto Generic Grotto'] = AutoGrotto.allGrottoRegionsWithTypes([0x3f])
