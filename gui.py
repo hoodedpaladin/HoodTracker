@@ -91,8 +91,8 @@ class HoodTrackerGui:
             name = LocationManager.possibleLocToString(loc, self.world, self.output_data['child_reached'], self.output_data['adult_reached'])
             possible = loc in self.output_data['possible_locations']
             checked = loc.name in self.input_data['checked_off']
-            locations_from_tracker.append(LocationManager.LocationEntry(loc_name=loc.name, txt=name, possible=possible, checked=checked))
-        self.locManager = LocationManager.LocationManager(locations=locations_from_tracker)
+            locations_from_tracker.append(LocationManager.LocationEntry(loc_name=loc.name, txt=name, possible=possible, checked=checked, parent_region=loc.parent_region.name))
+        self.locManager = LocationManager.LocationManager(locations=locations_from_tracker, world=self.world)
 
 
         self.exploreManager = ExploreManager.ExploreManager(self.world, parent=self)
