@@ -4,6 +4,7 @@ import sys
 import re
 import argparse
 from CommonUtils import *
+import gui
 
 # Make OoTR work as a submodule in a dir called ./OoT-Randomizer
 try:
@@ -23,7 +24,7 @@ from Item import ItemFactory
 from Settings import Settings, ArgumentDefaultsHelpFormatter
 import AutoGrotto
 
-def getSettings(input_data):
+def getSettings(input_data, gui_dialog=None):
     parser = argparse.ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--settings_string', help='Provide sharable settings using a settings string. This will override all flags that it specifies.')
@@ -37,15 +38,17 @@ def getSettings(input_data):
         settings_string = expectOne(input_data['settings_string'])
     elif args.settings_string is not None:
         settings_string = args.settings_string
-    else:
+    elif gui_dialog:
+        settings_string = gui.DialogSettingsManager.get_settings_string()
+    if settings_string is None:
         raise Exception("Please provide settings_string as an argument or in the text file")
 
     assert settings_string
     settings.update_with_settings_string(settings_string)
     return settings
 
-def generate(input_data):
-    settings = getSettings(input_data)
+def generate(input_data, gui_dialog):
+    settings = getSettings(input_data, gui_dialog=gui_dialog)
 
     for trick in SettingsList.logic_tricks.values():
         settings.__dict__[trick['name']] = trick['name'] in settings.allowed_tricks
@@ -342,8 +345,8 @@ def getInputData(filename):
             input_data['known_exits'].append(x)
     return input_data
 
-def startWorldBasedOnData(input_data):
-    world = generate(input_data)
+def startWorldBasedOnData(input_data, gui_dialog):
+    world = generate(input_data, gui_dialog=gui_dialog)
 
     # Populate starting equipment into state.prog_items
     for x in input_data['equipment']:

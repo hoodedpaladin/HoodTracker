@@ -53,16 +53,28 @@ def doWeWantThisLoc(loc, world):
             return False
     return True
 
+class DialogSettingsManager(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+    @staticmethod
+    def get_settings_string():
+        dialog = DialogSettingsManager()
+        dialog.show()
+        text, ok = QtWidgets.QInputDialog.getText(dialog, "Please input a settings string", "Settings string:");
+        if not ok:
+            text = None
+        return text
+
 class HoodTrackerGui:
     def __init__(self, filename, save_enabled=True, override_inventory=False):
         self.save_enabled = save_enabled
         self.override_inventory = override_inventory
         self.filename = filename
         self.input_data = HoodTracker.getInputData(filename)
-        self.world, self.output_known_exits = HoodTracker.startWorldBasedOnData(self.input_data)
+        self.app = QtWidgets.QApplication(sys.argv)
+        self.world, self.output_known_exits = HoodTracker.startWorldBasedOnData(self.input_data, gui_dialog=True)
 
     def run(self):
-        app = QtWidgets.QApplication(sys.argv)
 
         self.invManager = InventoryManager.InventoryManager(inventory=InventoryManager.makeInventory(max_starting=self.override_inventory), parent=self)
         if not self.override_inventory:
@@ -91,7 +103,7 @@ class HoodTrackerGui:
         window.find_path_action.triggered.connect(self.launch_pathfind_dialog)
         window.show()
 
-        app.exec_()
+        self.app.exec_()
 
         self.input_data['equipment'] = self.invManager.getOutputFormat()
         self.input_data['checked_off'] = self.locManager.getOutputFormat()
