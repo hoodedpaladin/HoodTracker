@@ -212,7 +212,9 @@ def getNeighborhood(region, world):
         region_obj = world.get_region(region)
         exit_name = interior_regions[region]
         exit = expectOne([x for x in region_obj.exits if x.name == exit_name])
-        assert not exit.shuffled
+        if exit.shuffled:
+            # TODO: if there is a multi-region interior, can we connect it to a different un-shuffled entrance?
+            return "Unknown"
         new_region = exit.connected_region
         return getNeighborhood(new_region, world)
     if region not in unknown_neighborhoods:
