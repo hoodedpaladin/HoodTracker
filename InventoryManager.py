@@ -1,9 +1,8 @@
 from collections import Counter
 import ItemPool
-from PySide2.QtWidgets import *
 import GuiUtils
 from CommonUtils import *
-import logging
+from ImageInvButton import ImageInvButton
 
 total_equipment = ItemPool.item_groups['ProgressItem'] + ItemPool.item_groups['Song'] + ItemPool.item_groups['DungeonReward'] + [
     'Bombchu Drop',
@@ -20,7 +19,26 @@ total_equipment = ItemPool.item_groups['ProgressItem'] + ItemPool.item_groups['S
     'Progressive Scale',
     'Progressive Wallet',
     'Blue Fire',
-] + list(ItemPool.tradeitems)
+]
+
+gui_ignore_items = [
+    'Bottle with Milk',
+    'Deliver Letter',
+    'Eyedrops',
+    'Ice Arrows',
+    'Bombchus (5)',
+    'Bombchus (20)',
+    'Bottle with Red Potion',
+    'Bottle with Green Potion',
+    'Bottle with Blue Potion',
+    'Bottle with Fairy',
+    'Bottle with Fish',
+    'Bottle with Blue Fire',
+    'Bottle with Bugs',
+    'Bottle with Poe',
+    'Double Defense',
+    'Triforce Piece',
+]
 
 item_limits = Counter()
 for name, item in ItemPool.vanillaSK.items():
@@ -41,73 +59,18 @@ class InventoryEntry:
         self.max = max
         self.current = current
 
-class InventoryBox(QWidget):
-    def __init__(self, name, max, current, parent):
-        super().__init__()
-        self.parent = parent
-        self.name = name
-        self.current = current
-        self.max = max
-
-        self.label = QLabel()
-        self.plusbox = QPushButton("+")
-        self.plusbox.setFixedWidth(40)
-        self.plusbox.clicked.connect(lambda x: self.plusEvent(x))
-        self.plusspacer = QLabel("")
-        self.plusspacer.setFixedWidth(40)
-        self.minusbox = QPushButton("-")
-        self.minusbox.setFixedWidth(40)
-        self.minusbox.clicked.connect(lambda x: self.minusEvent(x))
-        self.minusspacer = QLabel("")
-        self.minusspacer.setFixedWidth(40)
-        self.layout = QHBoxLayout()
-        self.layout.addWidget(self.label)
-        self.layout.addStretch()
-        self.layout.addWidget(self.plusbox)
-        self.layout.addWidget(self.plusspacer)
-        self.layout.addWidget(self.minusbox)
-        self.layout.addWidget(self.minusspacer)
-
-        self.setLayout(self.layout)
-        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
-        self.setFixedHeight(50)
-
-        self.updateWidgets()
-
-    def plusEvent(self, x):
-        if (self.current >= self.max):
-            return
-        self.current = self.current + 1
-        logging.info("User has increased {} to {}".format(self.name, self.current))
-        self.updateWidgets()
-        self.parent.update(self)
-
-    def minusEvent(self, x):
-        if (self.current < 1):
-            return
-        self.current = self.current - 1
-        logging.info("User has decreased {} to {}".format(self.name, self.current))
-        self.updateWidgets()
-        self.parent.update(self)
-
-    def updateWidgets(self):
-        self.label.setText("{}: {}".format(self.name, self.current))
-        self.plusbox.setVisible(self.current < self.max)
-        self.plusspacer.setVisible(not(self.current < self.max))
-        self.minusbox.setVisible(self.current > 0)
-        self.minusspacer.setVisible(not(self.current > 0))
-
 class InventoryManager:
     def __init__(self, inventory, parent):
-        self.inv_widgets = [InventoryBox(name=x.name, max=x.max, current=x.current, parent=self) for x in inventory]
-        self.widget = GuiUtils.ScrollSettingsArea(widgets=self.inv_widgets)
+        self.inv_widgets = [ImageInvButton(name=x.name, max=x.max, current=x.current, parent=self) for x in inventory]
+        self.shown_widgets = [x for x in self.inv_widgets if x.name not in gui_ignore_items]
+        self.widget = GuiUtils.GridScrollSettingsArea(widgets=self.shown_widgets)
         self.parent = parent
 
     def collectItem(self, name, count=1):
         item = expectOne([x for x in self.inv_widgets if x.name == name])
         item.current += count
         assert item.current <= item.max and item.current >= 0
-        item.updateWidgets()
+        item.update()
 
     def getProgItems(self, free_scarecrow, free_epona):
         results = Counter()
