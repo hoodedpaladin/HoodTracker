@@ -56,5 +56,11 @@ class GridScrollSettingsArea(QScrollArea):
         for w in widgets:
             layout.addWidget(w, count // self.width, count % self.width)
             count += 1
+
+        # Prevent gaps between buttons by making the last column and row take up the extra space
         layout.setColumnStretch(self.width - 1, 1)
+        last_row = (len(widgets) - 1) // self.width
+        # IDK why last_row + 1 works
+        layout.setRowStretch(last_row + 1, 1)
+
         self.collection_of_widgets = widgets
