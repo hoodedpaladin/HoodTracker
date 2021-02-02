@@ -119,9 +119,9 @@ class HoodTrackerGui:
     def updateLogic(self):
         # Reset inventory to the state of the invManager
         self.world.state.prog_items = self.invManager.getProgItems(free_scarecrow=self.world.free_scarecrow, free_epona=self.world.no_epona_race)
-        output_data = HoodTracker.solve(self.world)
-        self.locManager.updateLocationPossible(output_data['possible_locations'])
-        self.exploreManager.showThese(output_data['please_explore'], self.world, self.output_known_exits)
+        self.output_data = HoodTracker.solve(self.world)
+        self.locManager.updateLocationPossible(self.output_data['possible_locations'])
+        self.exploreManager.showThese(self.output_data['please_explore'], self.world, self.output_known_exits)
 
     def launch_pathfind_dialog(self):
         self.find_path_dialog.show()
