@@ -6,6 +6,7 @@ import EntranceShuffle
 import AutoGrotto
 from collections import Counter
 import logging
+import re
 
 # This is the intended number of overworld entrances to a certain region
 overworld_destinations = {
@@ -47,7 +48,24 @@ overworld_destinations = {
     "Zoras Fountain": 1
 }
 
-owl_destinations = list(overworld_destinations.keys()) + ['Kak Impas Ledge']
+def getDestinationsOfTypes(types):
+    est = EntranceShuffle.entrance_shuffle_table
+    exit_names = []
+    for x in est:
+        if x[0] not in types:
+            continue
+        exit_names.append(x[1][0])
+        if len(x) > 2:
+            exit_names.append(x[2][0])
+    destinations = set()
+    for x in exit_names:
+        match = re.fullmatch("(.*) -> (.*)", x)
+        assert match
+        destinations.add(match.group(2))
+    return destinations
+
+owl_destinations = getDestinationsOfTypes(['WarpSong', 'OwlDrop', 'Overworld', 'Extra'])
+spawn_warp_destinations = getDestinationsOfTypes(['Spawn', 'WarpSong', 'OwlDrop', 'Overworld', 'Interior', 'SpecialInterior', 'Extra'])
 
 class ExploreBox(QtWidgets.QWidget):
     def __init__(self, text, options, parent=None):
@@ -127,6 +145,9 @@ class ExploreManager:
         owl_flight_names = [x[1][0] for x in est if x[0] == 'OwlDrop']
         self.owl_flight = [x for x in all_exits if x.name in owl_flight_names]
 
+        spawn_warp_names = [x[1][0] for x in est if x[0] in ['WarpSong', 'Spawn']]
+        self.spawn_warp_exits = [x for x in all_exits if x.name in spawn_warp_names]
+
         # substitute_helper() does a lookup from exit name -> auto name
         # save this in backwards form
         self.backwards_substitute = {}
@@ -159,14 +180,18 @@ class ExploreManager:
                     interiors.remove(x.connected_region)
                 possible = interiors
             elif exit in self.overworld_to_overworld:
+                # Overworld pool: exclude overworld destinations that are already lead to by their vanilla amount of overworld<->overworld connections
                 check_these = [x for x in self.overworld_to_overworld if not x.shuffled]
                 leading_to = Counter()
                 for x in check_these:
                     leading_to[x.connected_region] += 1
                 possible = [dest for dest in overworld_destinations if leading_to[dest] < overworld_destinations[dest]]
+                # Exits won't lead to the same region either
                 possible = [dest for dest in possible if dest != exit.parent_region.name]
             elif exit in self.owl_flight:
                 possible = owl_destinations
+            elif exit in self.spawn_warp_exits:
+                possible = spawn_warp_destinations
             elif exit in self.overworld_to_grotto:
                 possible = [str(x.parent_region) for x in self.grotto_to_overworld if x.shuffled]
             elif exit in self.overworld_to_dungeon:
@@ -211,7 +236,7 @@ class ExploreManager:
                 check_reverse_exit = [x for x in self.overworld_to_overworld if x.parent_region.name == destination_name]
                 if len(check_reverse_exit) == 0:
                     # TODO These exits imperfectly matched ... can I fix this?
-                    assert destination_name in ['LW Bridge From Forest', 'DMC Upper Local']
+                    assert destination_name in ['LW Bridge From Forest', 'DMC Upper Local', 'DMC Lower Local']
                 else:
                     reverse_exit = expectOne(check_reverse_exit)
         elif exit in one_entrance_places:
@@ -235,6 +260,8 @@ class ExploreManager:
             reverse_exit = expectOne([x for x in reverse_exits if x.parent_region.name == destination_name])
         elif exit in self.owl_flight:
             assert destination_name in owl_destinations
+        elif exit in self.spawn_warp_exits:
+            assert destination_name in spawn_warp_destinations
         elif exit in self.interior_to_overworld:
             # Let's assume this is good ...
             pass

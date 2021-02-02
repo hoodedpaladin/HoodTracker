@@ -38,8 +38,8 @@ def findPath(world, equipment, start_region, start_age, destination, destination
 
     root_exits = world.get_region("Root Exits").exits[:]
     if reboot_as_last_resort:
-        child_reboot = expectOne([x for x in root_exits if x.name == "Root Exits -> KF Links House"])
-        adult_reboot = expectOne([x for x in root_exits if x.name == "Root Exits -> Temple of Time"])
+        child_reboot = expectOne([x for x in root_exits if x.name == "Root Exits -> Child Spawn"])
+        adult_reboot = expectOne([x for x in root_exits if x.name == "Root Exits -> Adult Spawn"])
         root_exits.remove(child_reboot)
         root_exits.remove(adult_reboot)
         last_resort.append(Visit(age=start_age, region="Root Exits", steps=0, string="Reboot, ", previous=None))

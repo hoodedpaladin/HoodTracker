@@ -38,6 +38,7 @@ gui_ignore_items = [
     'Bottle with Poe',
     'Double Defense',
     'Triforce Piece',
+    'Giants Knife',
 ]
 
 item_limits = Counter()

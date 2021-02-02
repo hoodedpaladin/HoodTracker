@@ -111,8 +111,11 @@ item_events = {
 }
 
 def doWeWantThisLoc(loc, world):
-    if world.shuffle_scrubs == 'off' and loc.filter_tags and 'Deku Scrub' in loc.filter_tags:
-        return False
+    # Deku scrubs that don't have upgrades can be ignored, but not if scrub shuffle or grotto shuffle is on
+    if world.shuffle_scrubs == 'off' and not world.shuffle_grotto_entrances:
+        if loc.filter_tags and 'Deku Scrub' in loc.filter_tags and 'Deku Scrub Upgrades' not in loc.filter_tags:
+            return False
+    # Generic grottos with chests are assumed to be looted immediately when you find a grotto, so ignore them
     if world.shuffle_grotto_entrances:
         if loc.filter_tags and 'Grottos' in loc.filter_tags and loc.rule_string == 'True':
             return False
@@ -156,7 +159,7 @@ def autocollect(possible_locations, collected_locations, state):
         if loc.type == 'Event':
             collect_items.append(loc.item.name)
             move_locs.append(loc)
-        if loc.type in ('GossipStone', 'Drop'):
+        if loc.type in ('HintStone', 'Drop'):
             if loc.item:
                 collect_items.append(loc.item.name)
             move_locs.append(loc)
@@ -201,23 +204,29 @@ def solve(world, starting_region='Root'):
 
 # Mark all exits shuffled that would be shuffled according to the settings
 def shuffleExits(world):
-    types = []
-    if world.shuffle_dungeon_entrances:
-        types.append('Dungeon')
-    if world.shuffle_interior_entrances:
-        types.append('Interior')
-    if world.shuffle_grotto_entrances:
-        types.extend(['Grotto', 'Grave'])
-        if world.shuffle_special_indoor_entrances:
-            types.append('SpecialGrave')
-    if world.shuffle_overworld_entrances:
-        types.extend(['Overworld', 'OwlDrop'])
-    if world.shuffle_special_indoor_entrances:
-        types.append('SpecialInterior')
+    settings_to_types_dict = {
+        'shuffle_dungeon_entrances': ['Dungeon'],
+        'shuffle_interior_entrances': ['Interior'],
+        'shuffle_grotto_entrances': ['Grotto', 'Grave'],
+        'shuffle_overworld_entrances': ['Overworld'],
+        'owl_drops': ['OwlDrop'],
+        'warp_songs': ['WarpSong'],
+        'spawn_positions': ['Spawn'],
+        'shuffle_special_interior_entrances': ['SpecialInterior'],
+    }
+    shuffled_types = []
+
+    for setting, types in settings_to_types_dict.items():
+        if getattr(world, setting):
+            shuffled_types.extend(types)
+
+    # Complex exceptions
+    if world.shuffle_grotto_entrances and world.shuffle_special_interior_entrances:
+        types.append('SpecialGrave')
 
     shuffle_these = set()
     for x in EntranceShuffle.entrance_shuffle_table:
-        if x[0] not in types:
+        if x[0] not in shuffled_types:
             continue
         assert len(x) >= 2
         assert len(x) <= 3
