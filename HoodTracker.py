@@ -277,22 +277,6 @@ def fillKnownExits(world, known_exits):
             output_known_exits[str(exit)] = str(dest_region)
         else:
             assert exit.connected_region == dest_region.name
-
-        # If it's a simple pair, automatically fill in the reverse
-        if name in simple_pairs:
-            search_for_other_entrance = [x for x in simple_pairs.keys() if x.endswith(dest_region.name)]
-            try:
-                other_entrance = expectOne(search_for_other_entrance)
-            except AssertionError:
-                continue
-            other_exit_name = simple_pairs[other_entrance]
-            other_exit = expectOne([x for x in all_exits if x.name == other_exit_name])
-            if other_exit.shuffled:
-                other_exit.connected_region = exit.parent_region.name
-                other_exit.shuffled = False
-                output_known_exits[str(other_exit)] = str(exit.parent_region)
-            else:
-                assert other_exit.connected_region == exit.parent_region.name
     return output_known_exits
 
 #What to display to the user as un-collected items

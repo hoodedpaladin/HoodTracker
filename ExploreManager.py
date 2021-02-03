@@ -7,46 +7,12 @@ import AutoGrotto
 from collections import Counter
 import logging
 import re
+from collections import Counter
 
-# This is the intended number of overworld entrances to a certain region
-overworld_destinations = {
-    "Castle Grounds": 1,
-    "DMC Lower Local": 1,
-    "DMC Upper Local": 1,
-    "Death Mountain": 2,
-    "Death Mountain Summit": 1,
-    "Desert Colossus": 1,
-    "GC Darunias Chamber": 1,
-    "GC Woods Warp": 1,
-    "GF Outside Gate": 1,
-    "GV Fortress Side": 1,
-    "Gerudo Fortress": 1,
-    "Gerudo Valley": 1,
-    "Goron City": 1,
-    "Graveyard": 1,
-    "Hyrule Field": 7,
-    "Kak Behind Gate": 1,
-    "Kakariko Village": 2,
-    "Kokiri Forest": 2,
-    "LW Beyond Mido": 1,
-    "LW Bridge": 1,
-    "LW Bridge From Forest": 1,
-    "Lake Hylia": 2,
-    "Lon Lon Ranch": 1,
-    "Lost Woods": 3,
-    "Market": 3,
-    "Market Entrance": 2,
-    "SFM Entryway": 1,
-    "ToT Entrance": 1,
-    "Wasteland Near Colossus": 1,
-    "Wasteland Near Fortress": 1,
-    "ZD Behind King Zora": 1,
-    "ZR Behind Waterfall": 1,
-    "ZR Front": 1,
-    "Zora River": 1,
-    "Zoras Domain": 2,
-    "Zoras Fountain": 1
-}
+def parseExitName(name):
+    match = re.fullmatch("(.*) -> (.*)", name)
+    assert match
+    return [match.group(1), match.group(2)]
 
 def getDestinationsOfTypes(types):
     est = EntranceShuffle.entrance_shuffle_table
@@ -57,15 +23,25 @@ def getDestinationsOfTypes(types):
         exit_names.append(x[1][0])
         if len(x) > 2:
             exit_names.append(x[2][0])
-    destinations = set()
-    for x in exit_names:
-        match = re.fullmatch("(.*) -> (.*)", x)
-        assert match
-        destinations.add(match.group(2))
-    return destinations
+    return [parseExitName(x)[1] for x in exit_names]
 
-owl_destinations = getDestinationsOfTypes(['WarpSong', 'OwlDrop', 'Overworld', 'Extra'])
-spawn_warp_destinations = getDestinationsOfTypes(['Spawn', 'WarpSong', 'OwlDrop', 'Overworld', 'Interior', 'SpecialInterior', 'Extra'])
+def getPairedExitName(name):
+    est = EntranceShuffle.entrance_shuffle_table
+    for x in est:
+        if len(x) != 3:
+            continue
+        if x[1][0] == name:
+            return x[2][0]
+        if x[2][0] == name:
+            return x[1][0]
+    raise Exception("Paired exit not found!")
+
+
+# This is the intended number of overworld entrances to a certain region
+overworld_destinations = Counter(sorted(getDestinationsOfTypes(['Overworld'])))
+
+owl_destinations = set(getDestinationsOfTypes(['WarpSong', 'OwlDrop', 'Overworld', 'Extra']))
+spawn_warp_destinations = set(getDestinationsOfTypes(['Spawn', 'WarpSong', 'OwlDrop', 'Overworld', 'Interior', 'SpecialInterior', 'Extra']))
 
 class ExploreBox(QtWidgets.QWidget):
     def __init__(self, text, options, parent=None):
@@ -233,9 +209,9 @@ class ExploreManager:
             # overworld connections that are unique can have the reverse automatically filled in
             if overworld_destinations[destination_name] == 1:
                 check_reverse_exit = [x for x in self.overworld_to_overworld if x.parent_region.name == destination_name]
-                if len(check_reverse_exit) == 0:
-                    # TODO These exits imperfectly matched ... can I fix this?
-                    assert destination_name in ['LW Bridge From Forest', 'DMC Upper Local', 'DMC Lower Local']
+                if len(check_reverse_exit) != 1:
+                    # TODO These exits are imperfectly matched ... can I fix this?
+                    assert destination_name in ['LW Bridge From Forest', 'DMC Upper Local', 'DMC Lower Local', 'LW Bridge']
                 else:
                     reverse_exit = expectOne(check_reverse_exit)
         elif exit in one_entrance_places:
@@ -274,7 +250,9 @@ class ExploreManager:
         # Success
         self.makeConnection(exit, destination_name)
         if reverse_exit is not None:
-            self.makeConnection(reverse_exit, exit.parent_region.name, redundant_okay=True)
+            paired_exit = getPairedExitName(exit.name)
+            reverse_exit_destination = parseExitName(paired_exit)[1]
+            self.makeConnection(reverse_exit, reverse_exit_destination, redundant_okay=True)
         # Update the display with new logic
         self.parent.updateLogic()
 
