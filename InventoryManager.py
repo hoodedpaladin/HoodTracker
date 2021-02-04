@@ -19,6 +19,7 @@ total_equipment = ItemPool.item_groups['ProgressItem'] + ItemPool.item_groups['S
     'Progressive Scale',
     'Progressive Wallet',
     'Blue Fire',
+    'Deku Nut',
 ]
 
 gui_ignore_items = [
@@ -87,6 +88,8 @@ class InventoryManager:
                 results['Deku Stick Drop'] += x.current
             elif x.name == 'Hylian Shield':
                 results['Buy Hylian Shield'] += x.current
+            elif x.name == 'Deku Nut':
+                results['Buy Deku Nut (5)'] += x.current
 
         # Hardcoded items
         if free_scarecrow:

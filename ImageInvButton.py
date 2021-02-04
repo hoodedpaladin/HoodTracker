@@ -91,6 +91,7 @@ imageNamesDict = {
     'Hylian Shield': 'OoT_Hylian_Shield_Icon.png',
     'Blue Fire': 'OoT_Blue_Fire_Icon.png',
     'Gold Skulltula Token': 'OoT_Token_Icon.png',
+    'Deku Nut': 'OoT_Deku_Nut_Icon.png',
 }
 
 helperTextDict = {
