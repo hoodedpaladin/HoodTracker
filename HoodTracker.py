@@ -23,6 +23,7 @@ import SettingsList
 from Item import ItemFactory
 from Settings import Settings, ArgumentDefaultsHelpFormatter
 import AutoGrotto
+from Region import TimeOfDay
 
 def getSettings(input_data, gui_dialog=None):
     parser = argparse.ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
@@ -65,6 +66,7 @@ def generate(input_data, gui_dialog):
             overworld_data = os.path.join(data_path('World'), 'Overworld.json')
 
         # Compile the json rules based on settings
+        world.ensure_tod_access=True
         world.load_regions_from_json(overworld_data)
         create_dungeons(world)
         world.create_internal_locations()
@@ -100,7 +102,8 @@ def filterRegions(exit_queue, world, age, reached_regions, please_explore):
             continue
         if exit.access_rule(world.state, spot=exit, age=age):
             changes += 1
-            reached_regions.append(destination)
+            reached_regions[destination] = destination.provides_time
+            reached_regions[world.get_region('Root')] |= destination.provides_time
             exit_queue.extend(destination.exits)
         else:
             failed.append(exit)
@@ -159,6 +162,7 @@ def autocollect(possible_locations, collected_locations, state):
         if loc.type == 'Event':
             collect_items.append(loc.item.name)
             move_locs.append(loc)
+            continue
         if loc.type in ('HintStone', 'Drop'):
             if loc.item:
                 collect_items.append(loc.item.name)
@@ -175,32 +179,32 @@ def autocollect(possible_locations, collected_locations, state):
 
 def solve(world, starting_region='Root'):
     root_region = world.get_region(starting_region)
-    child_reached = [root_region]
-    adult_reached = [root_region]
+    reached_regions = {'child': {root_region:TimeOfDay.NONE},
+                       'adult': {root_region:TimeOfDay.NONE}}
     all_locations = [x for region in world.regions for x in region.locations]
     locked_locations=all_locations[:]
     possible_locations=[]
     collected_locations=[]
-    child_queue = [exit for exit in root_region.exits]
-    adult_queue = [exit for exit in root_region.exits]
+    queues = {'child': [exit for exit in root_region.exits],
+              'adult': [exit for exit in root_region.exits]}
     please_explore = []
+
+    # Provide an implementation of world.state.search.can_reach
+    world.state.search = SearchClass(world, reached_regions)
 
     # Map traversal
     changes = 1
     while changes:
         changes = 0
 
-        add_changes, adult_queue = filterRegions(adult_queue, world, 'adult', adult_reached, please_explore)
-        changes += add_changes
-        add_changes, child_queue = filterRegions(child_queue, world, 'child', child_reached, please_explore)
-        changes += add_changes
-
-        changes += filterLocations(locked_locations, possible_locations, adult_reached, world.state, 'adult', world)
-        changes += filterLocations(locked_locations, possible_locations, child_reached, world.state, 'child', world)
+        for age in ['adult', 'child']:
+            add_changes, queues[age] = filterRegions(queues[age], world, age, reached_regions[age], please_explore)
+            changes += add_changes
+            changes += filterLocations(locked_locations, possible_locations, reached_regions[age], world.state, age, world)
 
         changes += autocollect(possible_locations, collected_locations, world.state)
 
-    return {'please_explore':list(set(please_explore)), 'possible_locations':possible_locations, 'adult_reached':adult_reached, 'child_reached':child_reached}
+    return {'please_explore':list(set(please_explore)), 'possible_locations':possible_locations, 'adult_reached':reached_regions['adult'], 'child_reached':reached_regions['child']}
 
 # Mark all exits shuffled that would be shuffled according to the settings
 def shuffleExits(world):
@@ -337,6 +341,43 @@ def getInputData(filename):
             input_data['please_explore'].remove(x)
             input_data['known_exits'].append(x)
     return input_data
+
+class SearchClass():
+    def __init__(self, world, reached_regions):
+        self.world = world
+        self.reached_regions = reached_regions
+
+    def can_reach(self, region, age, tod):
+        assert tod in [TimeOfDay.DAY, TimeOfDay.DAMPE]
+
+        if self.reached_regions[age][region] & tod:
+            return True
+
+        return self.propagate_tod(self.reached_regions[age], age, tod, goal_region=region)
+
+    def propagate_tod(self, regions, age, tod, goal_region):
+        exit_queue = []
+        for region in regions:
+            if not regions[region] & tod:
+                continue
+            exit_queue.extend(region.exits)
+
+        while len(exit_queue):
+            exit = exit_queue.pop(0)
+
+            if exit.shuffled:
+                continue
+            destination = self.world.get_region(exit.connected_region)
+            if destination not in regions:
+                continue
+            if regions[destination] & tod:
+                continue
+            if exit.access_rule(self.world.state, spot=exit, age=age, tod=tod):
+                regions[destination] |= tod
+                if destination == goal_region:
+                    return True
+                exit_queue.extend(destination.exits)
+        return False
 
 def startWorldBasedOnData(input_data, gui_dialog):
     world = generate(input_data, gui_dialog=gui_dialog)
