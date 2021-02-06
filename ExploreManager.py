@@ -101,12 +101,6 @@ substitute_regions['Auto Scrub Grotto'] = AutoGrotto.allGrottoRegionsWithTypes([
 substitute_regions['Auto Fairy Fountain'] = AutoGrotto.allGrottoRegionsWithTypes([0x036D])
 substitute_regions['Auto Great Fairy Fountain'] = AutoGrotto.allGreatFairyFountains()
 
-def substitute_helper(name):
-    for type in substitute_regions:
-        if name in substitute_regions[type]:
-            return type
-    return name
-
 def getFromListByName(thelist, name):
     return expectOne([x for x in thelist if x.name == name])
 
@@ -152,7 +146,9 @@ class ExploreManager:
         # save this in backwards form
         self.backwards_substitute = {}
         for destination in all_destination_names:
-            sub_name = substitute_helper(destination)
+            sub_name = self.substitute_helper(destination)
+            if sub_name == destination:
+                continue
             if sub_name not in self.backwards_substitute:
                 self.backwards_substitute[sub_name] = []
             self.backwards_substitute[sub_name].append(destination)
@@ -161,6 +157,7 @@ class ExploreManager:
         # Sort the exit names
         please_explore = sorted(please_explore, key=str.casefold)
         known_labels = sorted([exit + " goesto " + dest for exit,dest in known_exits.items()], key=str.casefold)
+        enable_substitutions = True
 
         all_exits = [x for region in world.regions for x in region.exits]
 
@@ -192,6 +189,7 @@ class ExploreManager:
                 possible = owl_destinations
             elif exit in self.spawn_warp_exits:
                 possible = spawn_warp_destinations
+                enable_substitutions = False
             elif exit in self.overworld_to_grotto:
                 possible = [str(x.parent_region) for x in self.grotto_to_overworld if x.shuffled]
             elif exit in self.overworld_to_dungeon:
@@ -199,8 +197,9 @@ class ExploreManager:
 
             assert possible is not None
 
-            # Replace destination names with automatic substitute keywords
-            possible = [substitute_helper(x) for x in possible]
+            if enable_substitutions:
+                # Replace destination names with automatic substitute keywords
+                possible = [self.substitute_helper(x, world) for x in possible]
             # Remove duplicates + alphabetize
             possible = sorted(list(set(possible)))
 
@@ -240,21 +239,25 @@ class ExploreManager:
                 else:
                     reverse_exit = expectOne(check_reverse_exit)
         elif exit in one_entrance_places:
-            # Find the matching destination that has no exit leading to it yet.
-            # If destination_name is an automatic substitute, backwards_substitute will return a list of all such
-            # destinations
-            possibilities = self.backwards_substitute[destination_name]
-            found = None
-            check_these = [x for x in one_entrance_places if not x.shuffled]
-            for possible_dest in possibilities:
-                leading_to = [x for x in check_these if x.connected_region == possible_dest]
-                if len(leading_to) == 0:
-                    found = possible_dest
-                    break
-            assert found is not None
-            if found != destination_name:
-                print("{} chose {}".format(destination_name, found))
-                destination_name = found
+            # For automatic substitute names, find a region that is not connected to ANYTHING
+            if destination_name in self.backwards_substitute:
+                possibilities = self.backwards_substitute[destination_name]
+                found = None
+                for possible_dest in possibilities:
+                    leading_to = [x for x in all_exits if not x.shuffled and x.connected_region == possible_dest]
+                    if len(leading_to) == 0:
+                        found = possible_dest
+                        break
+                assert found is not None
+                if found != destination_name:
+                    logging.info("Auto-substitute chose {} for {}".format(found, destination_name))
+                    destination_name = found
+            else:
+                # This is a specific, not automatic, destination
+                # Make sure it is unique among one_entrance_places, but other types of connection are OK
+                check_these = [x for x in one_entrance_places if not x.shuffled]
+                leading_to = [x for x in check_these if x.connected_region == destination_name]
+                assert len(leading_to) == 0
 
             reverse_exits = self.grotto_to_overworld + self.interior_to_overworld + self.dungeon_to_overworld
             reverse_exit = expectOne([x for x in reverse_exits if x.parent_region.name == destination_name])
@@ -285,3 +288,19 @@ class ExploreManager:
         print("exit {} goesto {}".format(str(exit), destination_name))
         self.parent.addKnownExit(exit.name, destination_name)
 
+    # Returns the substitute name for a region
+    # If the world is supplied and the world has an entrance leading to this region already, don't substitute it
+    def substitute_helper(self, name, world=None):
+        for type in substitute_regions:
+            if name in substitute_regions[type]:
+                if world is not None:
+                    region_connected = False
+                    all_exits = [x for region in world.regions for x in region.exits]
+                    for x in all_exits:
+                        if not x.shuffled and x.connected_region == name:
+                            region_connected = True
+                            break
+                    if region_connected:
+                        return name
+                return type
+        return name
