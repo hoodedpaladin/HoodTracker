@@ -1,4 +1,5 @@
 import PySide2.QtWidgets as QtWidgets
+import PySide2.QtGui as QtGui
 import sys
 import InventoryManager
 import ExploreManager
@@ -11,9 +12,10 @@ import datetime
 import os
 
 class DisplayWindow(QtWidgets.QMainWindow):
-    def __init__(self, invManager, exploreManager, locManager, world):
+    def __init__(self, invManager, exploreManager, locManager, world, find_path_dialog:FindPath.FindPathDialog):
         super().__init__()
         self.world = world
+        self.find_path_dialog = find_path_dialog
 
         self.setWindowTitle('HoodTracker')
         self.resize(1500, 1200)
@@ -39,6 +41,9 @@ class DisplayWindow(QtWidgets.QMainWindow):
         self.find_path_action = QtWidgets.QAction("&Find Path", self)
         self.find_path_action.setShortcut('Ctrl+F')
         self.menuBar().addAction(self.find_path_action)
+
+    def closeEvent(self, event:QtGui.QCloseEvent):
+        self.find_path_dialog.close()
 
 def doWeWantThisLoc(loc, world):
     # Events / drops / gossipstones / fixed locations are auto-collected
@@ -101,8 +106,8 @@ class HoodTrackerGui:
         self.exploreManager = ExploreManager.ExploreManager(self.world, parent=self)
         self.exploreManager.showThese(self.output_data['please_explore'], self.world, self.output_known_exits)
 
-        window = DisplayWindow(invManager=self.invManager, exploreManager=self.exploreManager, locManager=self.locManager, world=self.world)
         self.find_path_dialog = FindPath.FindPathDialog(all_regions=[x.name for x in self.world.regions], parent=self)
+        window = DisplayWindow(invManager=self.invManager, exploreManager=self.exploreManager, locManager=self.locManager, world=self.world, find_path_dialog=self.find_path_dialog)
         window.find_path_action.triggered.connect(self.launch_pathfind_dialog)
         window.show()
 
