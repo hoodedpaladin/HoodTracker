@@ -54,6 +54,7 @@ for name, item in ItemPool.vanillaBK.items():
 for item in total_equipment:
     item_limits[item] += 1
 item_limits['Gold Skulltula Token'] += 100
+item_limits['Boss Key (Ganons Castle)'] += 1
 
 class InventoryEntry:
     def __init__(self, name, max, current=0):
