@@ -19,9 +19,11 @@ class LocationManager:
         self._unchecked = TableEntry("Unchecked", font_size=12)
         self._checked = TableEntry("Checked", font_size=12)
         self._not_possible = TableEntry("Not Possible", font_size=12)
+        self._ignored = TableEntry("Ignored", font_size=12)
         rootNode.appendRow(self._unchecked)
         rootNode.appendRow(self._checked)
         rootNode.appendRow(self._not_possible)
+        rootNode.appendRow(self._ignored)
 
         self.allLocations = []
 
@@ -39,7 +41,9 @@ class LocationManager:
         if location not in self.allLocations:
             self.allLocations.append(location)
 
-        if location.currently_checked:
+        if location.ignored:
+            destination = self._ignored
+        elif location.currently_checked:
             destination = self._checked
         elif not location.possible:
             destination = self._not_possible
@@ -56,12 +60,28 @@ class LocationManager:
         for x in self.allLocations:
             possible = x.loc_name in possible_names
             x.setPossible(possible)
+    def updateLocationsIgnored(self, world):
+        for x in self.allLocations:
+            ignored = locationIsIgnored(world, world.get_location(x.loc_name))
+            x.setIgnored(ignored)
+
     def getOutputFormat(self):
         results = []
         for x in self.allLocations:
             if x.currently_checked:
                 results.append(x.loc_name)
         return results
+
+
+def locationIsIgnored(world, location):
+    if location.filter_tags is not None and 'Skulltulas' in location.filter_tags:
+        if world.state.prog_items['Gold Skulltula Token'] >= world.max_progressions['Gold Skulltula Token']:
+            if world.tokensanity == 'off' or (
+                    world.tokensanity == 'dungeons' and location.scene >= 0xA) or (
+                    world.tokensanity == 'overworld' and location.scene < 0xA):
+                return True
+    return False
+
 
 class TableEntry(QStandardItem):
     def __init__(self, txt='', font_size=10, color=QColor(0,0,0)):
@@ -90,7 +110,7 @@ def possibleLocToString(loc, world, child_reached, adult_reached):
     return message
 
 class LocationEntry(TableEntry):
-    def __init__(self, loc_name, txt, possible, parent_region, checked=False):
+    def __init__(self, loc_name, txt, possible, parent_region, checked=False, ignored=False):
         if possible:
             color = QColor(0,0,0)
         else:
@@ -106,8 +126,8 @@ class LocationEntry(TableEntry):
             self.setCheckState(Qt.CheckState.Checked)
         else:
             self.setCheckState(Qt.CheckState.Unchecked)
-        #self.currently_checked = self.isChecked()
         self.possible = possible
+        self.ignored = ignored
 
     def isChecked(self):
         return self.checkState() == Qt.CheckState.Checked
@@ -131,6 +151,12 @@ class LocationEntry(TableEntry):
             color = QColor(255,0,0)
         self.setForeground(color)
         self.possible = possible
+        self.parent().takeRow(self.row())
+        self._parent.addLocation(self, first=True)
+    def setIgnored(self, ignored):
+        if ignored == self.ignored:
+            return
+        self.ignored = ignored
         self.parent().takeRow(self.row())
         self._parent.addLocation(self, first=True)
 

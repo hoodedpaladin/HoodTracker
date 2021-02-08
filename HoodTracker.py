@@ -382,6 +382,18 @@ class SearchClass():
 def startWorldBasedOnData(input_data, gui_dialog):
     world = generate(input_data, gui_dialog=gui_dialog)
 
+    # Fix the bug in World.py code
+    max_tokens = 0
+    if world.bridge == 'tokens':
+        max_tokens = max(max_tokens, world.bridge_tokens)
+    if world.lacs_condition == 'tokens':
+        max_tokens = max(max_tokens, world.lacs_tokens)
+    tokens = [50, 40, 30, 20, 10]
+    for t in tokens:
+        if f'Kak {t} Gold Skulltula Reward' not in world.disabled_locations:
+            max_tokens = max(max_tokens, t)
+    world.max_progressions['Gold Skulltula Token'] = max_tokens
+
     # Populate starting equipment into state.prog_items
     for x in input_data['equipment']:
         world.state.prog_items[x] += 1

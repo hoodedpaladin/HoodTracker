@@ -99,7 +99,7 @@ class HoodTrackerGui:
             name = LocationManager.possibleLocToString(loc, self.world, self.output_data['child_reached'], self.output_data['adult_reached'])
             possible = loc in self.output_data['possible_locations']
             checked = loc.name in self.input_data['checked_off']
-            locations_from_tracker.append(LocationManager.LocationEntry(loc_name=loc.name, txt=name, possible=possible, checked=checked, parent_region=loc.parent_region.name))
+            locations_from_tracker.append(LocationManager.LocationEntry(loc_name=loc.name, txt=name, possible=possible, checked=checked, parent_region=loc.parent_region.name, ignored=LocationManager.locationIsIgnored(self.world, loc)))
         self.locManager = LocationManager.LocationManager(locations=locations_from_tracker, world=self.world)
 
 
@@ -126,6 +126,7 @@ class HoodTrackerGui:
         self.world.state.prog_items = self.invManager.getProgItems(free_scarecrow=self.world.free_scarecrow, free_epona=self.world.no_epona_race)
         self.output_data = HoodTracker.solve(self.world)
         self.locManager.updateLocationPossible(self.output_data['possible_locations'])
+        self.locManager.updateLocationsIgnored(self.world)
         self.exploreManager.showThese(self.output_data['please_explore'], self.world, self.output_known_exits)
 
     def launch_pathfind_dialog(self):
