@@ -80,6 +80,8 @@ def locationIsIgnored(world, location):
                     world.tokensanity == 'dungeons' and location.scene >= 0xA) or (
                     world.tokensanity == 'overworld' and location.scene < 0xA):
                 return True
+    if location.name in world.disabled_locations:
+        return True
     return False
 
 
