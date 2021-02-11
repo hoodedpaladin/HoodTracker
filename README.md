@@ -1,6 +1,13 @@
 # HoodTracker
 A tracker for OoT-Randomizer which uses its logic and handles entrance shuffling
 
+### How To Run
+You need Python 3.8+ installed, and the PySide2 library ("pip install PySide2" will do this.)
+Then run
+```shell
+python HoodTracker.py
+```
+
 The save file is called output.txt, and if you don't have one, running the tracker will first prompt you for a settings string. This should come from the same version of OoT-Randomizer which is found in this folder. It doesn't need to be the exact same settings - more tricks enabled or more shuffle settings turned on will still be solveable.
 
 There are three main sections of the window:
