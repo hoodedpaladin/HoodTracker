@@ -133,7 +133,6 @@ class ExploreManager:
         # Sort the exit names
         please_explore = sorted(please_explore, key=str.casefold)
         known_labels = sorted([exit + " goesto " + dest for exit,dest in known_exits.items()], key=str.casefold)
-        enable_substitutions = True
 
         all_exits = [x for region in world.regions for x in region.exits]
 
@@ -165,7 +164,6 @@ class ExploreManager:
                 possible = owl_destinations
             elif exit in self.spawn_warp_exits:
                 possible = spawn_warp_destinations
-                enable_substitutions = False
             elif exit in self.overworld_to_grotto:
                 possible = [str(x.parent_region) for x in self.grotto_to_overworld if x.shuffled]
             elif exit in self.overworld_to_dungeon:
@@ -173,9 +171,9 @@ class ExploreManager:
 
             assert possible is not None
 
-            if enable_substitutions:
-                # Replace destination names with automatic substitute keywords
-                possible = [self.substitute_helper(x, world) for x in possible]
+            # Replace destination names with automatic substitute keywords
+            possible = [self.substitute_helper(x, world) for x in possible]
+
             # Remove duplicates + alphabetize
             possible = sorted(list(set(possible)))
 
