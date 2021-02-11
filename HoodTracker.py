@@ -483,13 +483,19 @@ def writeResultsToFile(world, input_data, output_data, output_known_exits, filen
         priorities = ["please_explore", "possible_locations", "known_exits", "other_shuffled_exits"]
     TextSettings.writeToFile(output_data, filename, priorities)
 
-def main():
-    filename = "output.txt"
+def main(filename):
     input_data = getInputData(filename)
     world, output_known_exits = startWorldBasedOnData(input_data)
     output_data = solve(world)
     writeResultsToFile(world, input_data, output_data, output_known_exits, filename)
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
 
+    parser.add_argument('--textmode', action="store_true")
+    parser.add_argument('--filename', type=str, default="output.txt")
+    args = parser.parse_args()
+    if args.textmode:
+        main(args.filename)
+    else:
+        gui.main(args.filename)

@@ -132,12 +132,12 @@ class HoodTrackerGui:
     def launch_pathfind_dialog(self):
         self.find_path_dialog.show()
 
-if __name__ == "__main__":
+def main(filename):
     log_dir = 'Logs'
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
     logfile_name = datetime.datetime.now().strftime('logfile_%Y-%m-%d %H-%M-%S.log')
     logging.basicConfig(filename=os.path.join(log_dir, logfile_name), level=logging.INFO)
-    hoodgui = HoodTrackerGui("output.txt")
+    hoodgui = HoodTrackerGui(filename)
     hoodgui.run()
