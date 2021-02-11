@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
+import logging
 import os
 import sys
 import re
 import argparse
 from CommonUtils import *
+import datetime
 
 # Make OoTR work as a submodule in a dir called ./OoT-Randomizer
 try:
@@ -483,19 +485,29 @@ def writeResultsToFile(world, input_data, output_data, output_known_exits, filen
         priorities = ["please_explore", "possible_locations", "known_exits", "other_shuffled_exits"]
     TextSettings.writeToFile(output_data, filename, priorities)
 
-def main(filename):
+def textmode(filename):
     input_data = getInputData(filename)
     world, output_known_exits = startWorldBasedOnData(input_data)
     output_data = solve(world)
     writeResultsToFile(world, input_data, output_data, output_known_exits, filename)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    # Log to stderr and file
+    log_dir = 'Logs'
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    logfile_name = datetime.datetime.now().strftime('logfile_%Y-%m-%d %H-%M-%S.log')
+    logfile_name = os.path.join(log_dir, logfile_name)
+    logging.basicConfig(handlers=[logging.FileHandler(logfile_name), logging.StreamHandler()], level=logging.INFO)
 
+    # Parse command line arguments
+    parser = argparse.ArgumentParser()
     parser.add_argument('--textmode', action="store_true")
     parser.add_argument('--filename', type=str, default="output.txt")
     args = parser.parse_args()
+
+    # Launch gui or text mode
     if args.textmode:
-        main(args.filename)
+        textmode(args.filename)
     else:
         gui.main(args.filename)

@@ -14,8 +14,6 @@ import LocationManager
 import HoodTracker
 import ItemPool
 import FindPath
-import datetime
-import os
 
 class DisplayWindow(QtWidgets.QMainWindow):
     def __init__(self, invManager, exploreManager, locManager, world, find_path_dialog:FindPath.FindPathDialog):
@@ -146,15 +144,6 @@ def exception_hook(exctype, value, traceback):
     sys.exit(1)
 
 def main(filename):
-    log_dir = 'Logs'
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-
-    # Log to stderr and file
-    logfile_name = datetime.datetime.now().strftime('logfile_%Y-%m-%d %H-%M-%S.log')
-    logfile_name = os.path.join(log_dir, logfile_name)
-    logging.basicConfig(handlers=[logging.FileHandler(logfile_name), logging.StreamHandler()], level=logging.INFO)
-
     sys.excepthook = exception_hook
 
     hoodgui = HoodTrackerGui(filename)
