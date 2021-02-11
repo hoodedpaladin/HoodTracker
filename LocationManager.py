@@ -162,6 +162,9 @@ class LocationEntry(TableEntry):
         self.parent().takeRow(self.row())
         self._parent.addLocation(self, first=True)
 
+    def __eq__(self, other):
+        return self.loc_name == other.loc_name
+
 def originOfExit(exit_name):
     match = re.fullmatch("(.*) -> (.*)", exit_name)
     assert match

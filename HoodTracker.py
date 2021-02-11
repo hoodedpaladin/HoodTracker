@@ -4,7 +4,6 @@ import sys
 import re
 import argparse
 from CommonUtils import *
-import gui
 
 # Make OoTR work as a submodule in a dir called ./OoT-Randomizer
 try:
@@ -24,6 +23,7 @@ from Item import ItemFactory
 from Settings import Settings, ArgumentDefaultsHelpFormatter
 import AutoGrotto
 from Region import TimeOfDay
+import gui
 
 def getSettings(input_data, gui_dialog=None):
     parser = argparse.ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)

@@ -132,12 +132,24 @@ class HoodTrackerGui:
     def launch_pathfind_dialog(self):
         self.find_path_dialog.show()
 
+# Pyside2 will consume exceptions unless we replace sys.excepthook with this
+# Also prints exceptions to the log
+def exception_hook(exctype, value, traceback):
+    logging.error("Uncaught exception:", exc_info=(exctype, value, traceback))
+    # Pyside2 will continue unless we do this
+    sys.exit(1)
+
 def main(filename):
     log_dir = 'Logs'
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
+    # Log to stderr and file
     logfile_name = datetime.datetime.now().strftime('logfile_%Y-%m-%d %H-%M-%S.log')
-    logging.basicConfig(filename=os.path.join(log_dir, logfile_name), level=logging.INFO)
+    logfile_name = os.path.join(log_dir, logfile_name)
+    logging.basicConfig(handlers=[logging.FileHandler(logfile_name), logging.StreamHandler()], level=logging.INFO)
+
+    sys.excepthook = exception_hook
+
     hoodgui = HoodTrackerGui(filename)
     hoodgui.run()
