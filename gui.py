@@ -1,5 +1,12 @@
-import PySide2.QtWidgets as QtWidgets
-import PySide2.QtGui as QtGui
+import logging
+
+try:
+    import PySide2.QtWidgets as QtWidgets
+    import PySide2.QtGui as QtGui
+except ModuleNotFoundError as e:
+    logging.error("This needs the PySide2 library; please run \'pip install PySide2\'")
+    raise e
+
 import sys
 import InventoryManager
 import ExploreManager
@@ -7,7 +14,6 @@ import LocationManager
 import HoodTracker
 import ItemPool
 import FindPath
-import logging
 import datetime
 import os
 
