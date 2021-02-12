@@ -1,10 +1,8 @@
 import GuiUtils
 import PySide2.QtWidgets as QtWidgets
-import HoodTracker
 from CommonUtils import *
 import EntranceShuffle
 import AutoGrotto
-from collections import Counter
 import logging
 import re
 from collections import Counter
@@ -182,7 +180,10 @@ class ExploreManager:
 
         for known in known_labels:
             new_widgets.append(QtWidgets.QLabel(known))
+
+        old_slider_position = self.widget.verticalScrollBar().sliderPosition()
         self.widget.setNewWidgets(new_widgets)
+        self.widget.verticalScrollBar().setSliderPosition(old_slider_position)
         self.explorations = new_widgets
         self.widget.setVisible(len(self.explorations) > 0)
 
@@ -196,6 +197,20 @@ class ExploreManager:
 
         # If this is set at the end of the function, we will connect the reverse
         reverse_exit = None
+
+        # For automatic substitute names, find a region that is not connected to ANYTHING
+        if destination_name in self.backwards_substitute:
+            possibilities = self.backwards_substitute[destination_name]
+            found = None
+            for possible_dest in possibilities:
+                leading_to = [x for x in all_exits if not x.shuffled and x.connected_region == possible_dest]
+                if len(leading_to) == 0:
+                    found = possible_dest
+                    break
+            assert found is not None
+            if found != destination_name:
+                logging.info("Auto-substitute chose {} for {}".format(found, destination_name))
+                destination_name = found
 
         # Sanity checks based on what kind of connection this is
         if exit in self.overworld_to_overworld:
@@ -213,25 +228,10 @@ class ExploreManager:
                 else:
                     reverse_exit = expectOne(check_reverse_exit)
         elif exit in one_entrance_places:
-            # For automatic substitute names, find a region that is not connected to ANYTHING
-            if destination_name in self.backwards_substitute:
-                possibilities = self.backwards_substitute[destination_name]
-                found = None
-                for possible_dest in possibilities:
-                    leading_to = [x for x in all_exits if not x.shuffled and x.connected_region == possible_dest]
-                    if len(leading_to) == 0:
-                        found = possible_dest
-                        break
-                assert found is not None
-                if found != destination_name:
-                    logging.info("Auto-substitute chose {} for {}".format(found, destination_name))
-                    destination_name = found
-            else:
-                # This is a specific, not automatic, destination
-                # Make sure it is unique among one_entrance_places, but other types of connection are OK
-                check_these = [x for x in one_entrance_places if not x.shuffled]
-                leading_to = [x for x in check_these if x.connected_region == destination_name]
-                assert len(leading_to) == 0
+            # Make sure it is unique among one_entrance_places, but other types of connection are OK
+            check_these = [x for x in one_entrance_places if not x.shuffled]
+            leading_to = [x for x in check_these if x.connected_region == destination_name]
+            assert len(leading_to) == 0
 
             reverse_exits = self.grotto_to_overworld + self.interior_to_overworld + self.dungeon_to_overworld
             reverse_exit = expectOne([x for x in reverse_exits if x.parent_region.name == destination_name])
