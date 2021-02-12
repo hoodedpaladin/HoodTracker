@@ -69,6 +69,29 @@ class ExploreBox(QtWidgets.QWidget):
         logging.info("User has indicated that {} goesto {}".format(exit, destination))
         self.parent.setKnownExit(exit, destination)
 
+class KnownExploreBox(QtWidgets.QWidget):
+    def __init__(self, text, parent):
+        super().__init__()
+        self.parent = parent
+        self.text = text
+
+        a = QtWidgets.QLabel(text)
+        b = QtWidgets.QPushButton("x")
+        b.setMaximumWidth(20)
+        b.setMaximumHeight(20)
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(a, stretch=1)
+        layout.addWidget(b, stretch=0)
+        b.clicked.connect(self.close_button_clicked)
+        self.setLayout(layout)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Fixed)
+        layout.setMargin(0)
+
+    def close_button_clicked(self):
+        logging.info("User clicked x button on {}".format(self.text))
+        self.parent.delete_connection(self.text)
+        return
+
 substitute_regions = {}
 substitute_regions['Auto Generic Grotto'] = AutoGrotto.allGrottoRegionsWithTypes([0x3f])
 substitute_regions['Auto Scrub Grotto'] = AutoGrotto.allGrottoRegionsWithTypes([0x5a4, 0x5bc])
@@ -179,7 +202,7 @@ class ExploreManager:
             new_widgets.append(widget)
 
         for known in known_labels:
-            new_widgets.append(QtWidgets.QLabel(known))
+            new_widgets.append(KnownExploreBox(text=known, parent=self))
 
         old_slider_position = self.widget.verticalScrollBar().sliderPosition()
         self.widget.setNewWidgets(new_widgets)
@@ -280,3 +303,18 @@ class ExploreManager:
                         return name
                 return type
         return name
+
+    def delete_connection(self, connection_string):
+        exit_name, destination = connection_string.split(" goesto ")
+
+        all_exits = [x for region in self.world.regions for x in region.exits]
+        exit = expectOne([x for x in all_exits if x.name == exit_name])
+
+        assert not exit.shuffled
+        assert exit.connected_region == destination
+
+        exit.shuffled = True
+        exit.connected_region = None
+        logging.info("Forgetting exit {}".format(exit_name))
+        self.parent.forgetKnownExit(exit_name)
+        self.parent.updateLogic()

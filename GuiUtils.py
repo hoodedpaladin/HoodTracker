@@ -6,7 +6,7 @@ class ScrollSettingsArea(QScrollArea):
         super().__init__()
 
         self._layout = QVBoxLayout()
-        self._layout.setSpacing(10)
+        self._layout.setSpacing(0)
 
         self.collection_of_widgets = []
         self.setNewWidgets(widgets)

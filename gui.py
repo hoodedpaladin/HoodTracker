@@ -125,6 +125,9 @@ class HoodTrackerGui:
     def addKnownExit(self, exit_name, destination_name):
         self.output_known_exits[exit_name] = destination_name
 
+    def forgetKnownExit(self, exit_name):
+        del self.output_known_exits[exit_name]
+
     def updateLogic(self):
         # Reset inventory to the state of the invManager
         self.world.state.prog_items = self.invManager.getProgItems(free_scarecrow=self.world.free_scarecrow, free_epona=self.world.no_epona_race)
