@@ -1,5 +1,7 @@
 import GuiUtils
 import PySide2.QtWidgets as QtWidgets
+import PySide2.QtCore as QtCore
+import PySide2.QtGui as QtGui
 from CommonUtils import *
 import EntranceShuffle
 import AutoGrotto
@@ -45,12 +47,24 @@ def getDestinationForPairedExit(paired_exit_name):
 owl_destinations = set(getDestinationsOfTypes(['WarpSong', 'OwlDrop', 'Overworld', 'Extra']))
 spawn_warp_destinations = set(getDestinationsOfTypes(['Spawn', 'WarpSong', 'OwlDrop', 'Overworld', 'Interior', 'SpecialInterior', 'Extra']))
 
+# Custom combo box that does not allow mouse wheel events until clicked
+class MyComboBox(QtWidgets.QComboBox):
+    def __init__(self):
+        super().__init__()
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+
+    def wheelEvent(self, e:QtGui.QWheelEvent) -> None:
+        if self.hasFocus():
+            super().wheelEvent()
+        else:
+            pass
+
 class ExploreBox(QtWidgets.QWidget):
     def __init__(self, text, options, parent=None):
         super().__init__()
         self.parent = parent
         a = QtWidgets.QLabel(text)
-        b = QtWidgets.QComboBox()
+        b = MyComboBox()
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(a)
         layout.addWidget(b)
