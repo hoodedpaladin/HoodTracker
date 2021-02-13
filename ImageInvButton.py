@@ -15,7 +15,7 @@ imageNamesDict = {
     'Small Key (Spirit Temple)': 'OoT_Small_Key_Icon.png',
     'Small Key (Water Temple)': 'OoT_Small_Key_Icon.png',
     'Kokiri Sword': 'OoT_Kokiri_Sword_Icon.png',
-    'Progressive Hookshot': 'OoT_Hookshot_Icon.png',
+    'Progressive Hookshot': ['OoT_Hookshot_Icon.png', 'OoT_Longshot_Icon.png'],
     'Boss Key (Fire Temple)': 'OoT_Boss_Key_Icon.png',
     'Boss Key (Shadow Temple)': 'OoT_Boss_Key_Icon.png',
     'Boss Key (Spirit Temple)': 'OoT_Boss_Key_Icon.png',
@@ -54,12 +54,12 @@ imageNamesDict = {
     'Dins Fire': 'OoT_Dins_Fire_Icon.png',
     'Nayrus Love': 'OoT_Nayrus_Love_Icon.png',
     'Farores Wind': 'OoT_Farores_Wind_Icon.png',
-    'Progressive Strength Upgrade': 'OoT_Gorons_Bracelet_Icon.png',
+    'Progressive Strength Upgrade': ['OoT_Gorons_Bracelet_Icon.png', 'OoT_Silver_Gauntlets_Icon.png', 'OoT_Golden_Gauntlets_Icon.png'],
     'Bomb Bag': 'OoT_Big_Bomb_Bag_Icon.png',
     'Bow': 'OoT_Fairy_Bow_Icon.png',
     'Slingshot': 'OoT_Fairy_Slingshot_Icon.png',
     'Progressive Wallet': 'OoT_Adults_Wallet_Icon.png',
-    'Progressive Scale': 'OoT_Golden_Scale_Icon.png',
+    'Progressive Scale': ['OoT_Silver_Scale_Icon.png', 'OoT_Golden_Scale_Icon.png'],
     'Bombchus': 'OoT_Bombchu_Icon.png',
     'Magic Meter': 'OoT3D_Magic_Jar_Icon.png',
     'Bottle with Big Poe': 'OoT_Big_Poe_Soul_Icon.png',
@@ -127,12 +127,12 @@ class ImageInvButton(QAbstractButton):
         self.current = current
         self.max = max
 
-        if name in imageNamesDict:
-            image_name = imageNamesDict[name]
-        else:
-            image_name = "fix.png"
-        path = os.path.join("images", image_name)
-        self.pixmap = QtGui.QPixmap(path)
+        # Load one or more images for this button
+        image_names = imageNamesDict.get(name, "fix.png")
+        if isinstance(image_names, str):
+            image_names = [image_names]
+        paths = [os.path.join("images", image_name) for image_name in image_names]
+        self.pixmaps = [QtGui.QPixmap(path) for path in paths]
 
         if name in helperTextDict:
             self.helperText = helperTextDict[name]
@@ -174,12 +174,17 @@ class ImageInvButton(QAbstractButton):
         # Black background, plus item, shaded if current == 0
         painter = QtGui.QPainter(self)
         painter.fillRect(rect, QtGui.QColor(0,0,0))
-        painter.drawPixmap(rect, self.pixmap)
+
+        if len(self.pixmaps) > 1 and self.current > 1:
+            pixmap = self.pixmaps[self.current - 1]
+        else:
+            pixmap = self.pixmaps[0]
+        painter.drawPixmap(rect, pixmap)
         if self.current == 0:
             painter.fillRect(rect, QtGui.QColor(0,0,0,180))
 
         # White text in center
-        if self.current > 0 and self.max > 1:
+        if self.current > 0 and self.max > 1 and len(self.pixmaps) == 1:
             painter.setFont(QtGui.QFont('Open Sans', 14))
             painter.setPen(QtGui.QColor(255,255,255))
             painter.drawText(rect, Qt.AlignCenter, str(self.current))
