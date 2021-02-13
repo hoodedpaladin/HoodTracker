@@ -8,7 +8,6 @@ class ScrollSettingsArea(QScrollArea):
         self._layout = QVBoxLayout()
         self._layout.setSpacing(0)
 
-        self.collection_of_widgets = []
         self.setNewWidgets(widgets)
 
         self._widget = QWidget()
@@ -19,13 +18,13 @@ class ScrollSettingsArea(QScrollArea):
 
     def setNewWidgets(self, widgets):
         layout = self._layout
-        for x in self.collection_of_widgets:
-            x.setParent(None)
+
         while layout.count():
-            layout.takeAt(0)
+            child = layout.takeAt(0)
+            if isinstance(child, QWidgetItem):
+                child.widget().deleteLater()
         for w in widgets:
             layout.addWidget(w, 0)
-        self.collection_of_widgets = widgets
         layout.addStretch()
 
 class GridScrollSettingsArea(QScrollArea):
@@ -36,7 +35,6 @@ class GridScrollSettingsArea(QScrollArea):
         self._layout.setSpacing(0)
         self.width = 8
 
-        self.collection_of_widgets = []
         self.setNewWidgets(widgets)
 
         self._widget = QWidget()
@@ -47,15 +45,13 @@ class GridScrollSettingsArea(QScrollArea):
 
     def setNewWidgets(self, widgets):
         layout = self._layout
-        for x in self.collection_of_widgets:
-            x.setParent(None)
         while layout.count():
-            layout.takeAt(0)
+            child = layout.takeAt(0)
+            if isinstance(child, QWidgetItem):
+                child.widget().deleteLater()
 
-        count = 0
-        for w in widgets:
+        for count, w in enumerate(widgets):
             layout.addWidget(w, count // self.width, count % self.width)
-            count += 1
 
         # Prevent gaps between buttons by making the last column and row take up the extra space
         layout.setColumnStretch(self.width - 1, 1)
@@ -63,4 +59,3 @@ class GridScrollSettingsArea(QScrollArea):
         # IDK why last_row + 1 works
         layout.setRowStretch(last_row + 1, 1)
 
-        self.collection_of_widgets = widgets

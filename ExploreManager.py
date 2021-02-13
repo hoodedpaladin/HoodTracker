@@ -80,7 +80,7 @@ class ExploreBox(QtWidgets.QWidget):
     def combo_select_event(self, x):
         if self.combo.currentText() == "?":
             return
-        self.setParent(None)
+        self.deleteLater()
 
         exit = self.text
         destination = self.combo.currentText()
