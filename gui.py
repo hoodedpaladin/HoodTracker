@@ -84,7 +84,7 @@ class HoodTrackerGui:
         self.filename = filename
         self.input_data = HoodTracker.getInputData(filename)
         self.app = QtWidgets.QApplication(sys.argv)
-        self.world, self.output_known_exits = HoodTracker.startWorldBasedOnData(self.input_data, gui_dialog=True)
+        self.world, self.output_known_exits, self.output_known_exit_pairs = HoodTracker.startWorldBasedOnData(self.input_data, gui_dialog=True)
 
     def run(self):
 
@@ -120,13 +120,35 @@ class HoodTrackerGui:
         self.input_data['equipment'] = self.invManager.getOutputFormat()
         self.input_data['checked_off'] = self.locManager.getOutputFormat()
         if self.save_enabled:
-            HoodTracker.writeResultsToFile(self.world, self.input_data, self.output_data, self.output_known_exits, self.filename)
+            HoodTracker.writeResultsToFile(world=self.world,
+                                           input_data=self.input_data,
+                                           output_data=self.output_data,
+                                           output_known_exits=self.output_known_exits,
+                                           filename=self.filename,
+                                           output_known_exit_pairs=self.output_known_exit_pairs)
 
     def addKnownExit(self, exit_name, destination_name):
         self.output_known_exits[exit_name] = destination_name
 
     def forgetKnownExit(self, exit_name):
+        logging.info("Forgetting exit {}".format(exit_name))
         del self.output_known_exits[exit_name]
+        self.exploreManager.reshuffle_exit(exit_name)
+
+        # The other exit in a pair
+        if exit_name in self.output_known_exit_pairs:
+            exit_name2 = self.output_known_exit_pairs[exit_name]
+            logging.info("Forgetting paired exit {}".format(exit_name2))
+            self.exploreManager.reshuffle_exit(exit_name2)
+            del self.output_known_exits[exit_name2]
+            del self.output_known_exit_pairs[exit_name]
+            del self.output_known_exit_pairs[exit_name2]
+
+    def addKnownExitPairs(self, exit, paired_exit):
+        self.output_known_exits[exit.name] = ExploreManager.getDestinationForPairedExit(paired_exit.name)
+        self.output_known_exits[paired_exit.name] = ExploreManager.getDestinationForPairedExit(exit.name)
+        self.output_known_exit_pairs[exit.name] = paired_exit.name
+        self.output_known_exit_pairs[paired_exit.name] = exit.name
 
     def updateLogic(self):
         # Reset inventory to the state of the invManager

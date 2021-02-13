@@ -26,6 +26,7 @@ from Settings import Settings, ArgumentDefaultsHelpFormatter
 import AutoGrotto
 from Region import TimeOfDay
 import gui
+import ExploreManager
 
 def getSettings(input_data, gui_dialog=None):
     parser = argparse.ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
@@ -247,7 +248,7 @@ def shuffleExits(world):
 
 # Fill known exits that the player has explored
 # Simple interiors/grottos/dungeons with only one connection to the overworld will be assisted
-def fillKnownExits(world, known_exits):
+def fillKnownExits(world, known_exits, known_exit_pairs):
     # This will be the output data (static regions substituted for keywords)
     # Dictionary of exit_name -> destination
     output_known_exits = {}
@@ -268,8 +269,18 @@ def fillKnownExits(world, known_exits):
     concrete_destinations = [x[1] for x in known_exits if "auto" not in x[1]]
     helper.removeRegions(concrete_destinations)
 
+    # Crunch the known_exits and known_exit_pairs into data
+    data = []
+    for line in known_exits:
+        exit, destination = line.split(" goesto ")
+        data.append([exit,destination])
+    for line in known_exit_pairs:
+        exit1, exit2 = line.split(" pairswith ")
+        data.append([exit1, ExploreManager.getDestinationForPairedExit(exit2)])
+        data.append([exit2, ExploreManager.getDestinationForPairedExit(exit1)])
+
     # Fill in explored exits
-    for name, dest_name in known_exits:
+    for name, dest_name in data:
         # Here's where we substitute a previously unused region name for the auto keyword
         if "auto" in dest_name:
             dest_name = helper.serveRegion(dest_name)
@@ -313,14 +324,6 @@ total_equipment = ItemPool.item_groups['ProgressItem'] + ItemPool.item_groups['S
 'Hylian Shield',
 ] + list(ItemPool.tradeitems)
 
-def parseKnownExits(lines):
-    result = []
-    for line in lines:
-        match = re.fullmatch("(.*) goesto (.*)", line)
-        assert match
-        result.append((match.group(1), match.group(2)))
-    return result
-
 def getInputData(filename):
     try:
         input_data = TextSettings.readFromFile(filename)
@@ -328,7 +331,7 @@ def getInputData(filename):
         input_data = {}
 
     # Make some input data empty lists if they are not present
-    for key in ['equipment', 'checked_off', 'one_wallet', 'two_wallets', 'known_exits']:
+    for key in ['equipment', 'checked_off', 'one_wallet', 'two_wallets', 'known_exits', 'paired_exits']:
         if key not in input_data:
             input_data[key] = []
 
@@ -381,6 +384,16 @@ class SearchClass():
                 exit_queue.extend(destination.exits)
         return False
 
+def fillKnownExitPairs(paired_exits):
+    results = {}
+
+    for line in paired_exits:
+        exit1, exit2 = line.split(" pairswith ")
+        results[exit1] = exit2
+        results[exit2] = exit1
+
+    return results
+
 def startWorldBasedOnData(input_data, gui_dialog):
     world = generate(input_data, gui_dialog=gui_dialog)
 
@@ -408,7 +421,8 @@ def startWorldBasedOnData(input_data, gui_dialog):
 
     # Shuffle any shuffled exits, and fill in any explored exits
     shuffleExits(world)
-    output_known_exits = fillKnownExits(world, parseKnownExits(input_data['known_exits']))
+    output_known_exits = fillKnownExits(world, known_exits=input_data['known_exits'], known_exit_pairs=input_data['paired_exits'])
+    output_known_exit_twins = fillKnownExitPairs(input_data['paired_exits'])
 
     # Set price rules that we have enabled
     for name in input_data['one_wallet']:
@@ -420,7 +434,7 @@ def startWorldBasedOnData(input_data, gui_dialog):
         wallet2 = world.parser.parse_rule('(Progressive_Wallet, 2)')
         loc.add_rule(wallet2)
 
-    return world, output_known_exits
+    return world, output_known_exits, output_known_exit_twins
 
 def possibleLocToString(loc, world, child_reached, adult_reached):
     # TODO: see if using the subrules can be refined here?
@@ -436,7 +450,7 @@ def possibleLocToString(loc, world, child_reached, adult_reached):
         message = "(adult)"
     return "{} (in {}) {}".format(loc, loc.parent_region, message)
 
-def writeResultsToFile(world, input_data, output_data, output_known_exits, filename, priorities=None):
+def writeResultsToFile(world, input_data, output_data, output_known_exits, filename, output_known_exit_pairs, priorities=None):
     # Propagate input data to output
     for key in ['equipment', 'checked_off', 'one_wallet', 'two_wallets']:
         output_data[key] = input_data[key]
@@ -469,7 +483,8 @@ def writeResultsToFile(world, input_data, output_data, output_known_exits, filen
 
     # Format the known_exits data as "<exit> goesto <destination>", sorted the way all_exits is.
     # This will replace the automatic keywords with real region names.
-    output_data['known_exits'] = ["{} goesto {}".format(exit.name, output_known_exits[exit.name]) for exit in all_exits if exit.name in output_known_exits]
+    output_data['known_exits'] = ["{} goesto {}".format(exit.name, output_known_exits[exit.name]) for exit in all_exits if exit.name in output_known_exits and exit.name not in output_known_exit_pairs]
+    output_data['paired_exits'] = formatPairedExits(output_known_exit_pairs)
 
     # Format the please_explore area as "<exit> goesto ?" to make it easier on the player
     please_explore_locs = [str(x) for x in all_exits if str(x) in output_data['please_explore']]
@@ -484,6 +499,19 @@ def writeResultsToFile(world, input_data, output_data, output_known_exits, filen
     if priorities is None:
         priorities = ["please_explore", "possible_locations", "known_exits", "other_shuffled_exits"]
     TextSettings.writeToFile(output_data, filename, priorities)
+
+def formatPairedExits(known_exit_twins):
+    items = list(known_exit_twins.keys())
+    assert len(items) % 2 == 0
+
+    result = []
+    while len(items):
+        item1 = items.pop(0)
+        item2 = known_exit_twins[item1]
+        items.remove(item2)
+        result.append("{} pairswith {}".format(item1, item2))
+
+    return result
 
 def textmode(filename):
     input_data = getInputData(filename)
