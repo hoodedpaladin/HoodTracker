@@ -185,21 +185,22 @@ class ImageInvButton(QAbstractButton):
 
         # White text in center
         if self.current > 0 and self.max > 1 and len(self.pixmaps) == 1:
-            painter.setFont(QtGui.QFont('Open Sans', 14))
-            painter.setPen(QtGui.QColor(255,255,255))
-            painter.drawText(rect, Qt.AlignCenter, str(self.current))
+            font = QtGui.QFont('Open Sans', 14)
+            painter.setPen(QtGui.QColor(0, 0, 0))
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(255, 255, 255)))
+            path = QtGui.QPainterPath()
+            path.addText(0, 0, font, str(self.current))
+            textcenter = path.boundingRect().center()
+            boxcenter = QPointF(rect.center())
+            difference = boxcenter - textcenter
+            path.translate(difference)
+            painter.drawPath(path)
 
         # Helper text
         if self.helperText:
-            painter.setPen(QtGui.QColor(255,255,255))
+            painter.setPen(QtGui.QColor(255, 255, 255))
             painter.setFont(QtGui.QFont('Open Sans', 9))
             painter.drawText(rect, self.helperText)
-
-    def enterEvent(self, event):
-        self.update()
-
-    def leaveEvent(self, event):
-        self.update()
 
     def sizeHint(self):
         return QSize(80, 80)
