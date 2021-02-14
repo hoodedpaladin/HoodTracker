@@ -96,15 +96,15 @@ class HoodTrackerGui:
 
         self.output_data = HoodTracker.solve(self.world)
 
-        locations_from_tracker = []
+        self.locManager = LocationManager.LocationManager(world=self.world)
         for loc in self.world.get_locations():
             if not doWeWantThisLoc(loc, self.world):
                 continue
-            name = LocationManager.possibleLocToString(loc, self.world, self.output_data['child_reached'], self.output_data['adult_reached'])
             possible = loc in self.output_data['possible_locations']
             checked = loc.name in self.input_data['checked_off']
-            locations_from_tracker.append(LocationManager.LocationEntry(loc_name=loc.name, txt=name, possible=possible, checked=checked, parent_region=loc.parent_region.name, ignored=LocationManager.locationIsIgnored(self.world, loc)))
-        self.locManager = LocationManager.LocationManager(locations=locations_from_tracker, world=self.world)
+            ignored = LocationManager.locationIsIgnored(self.world, loc)
+            locationEntry = LocationManager.LocationEntry(loc_name=loc.name, possible=possible, checked=checked, parent_region=loc.parent_region.name, ignored=ignored, parent=self.locManager)
+            self.locManager.insertLocation(locationEntry)
 
 
         self.exploreManager = ExploreManager.ExploreManager(self.world, parent=self)

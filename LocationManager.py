@@ -7,40 +7,42 @@ from CommonUtils import *
 import logging
 
 class LocationManager:
-    def __init__(self, locations, world):
+    def __init__(self, world):
         self.world = world
-        treeWidget = QTreeView()
-        self.widget = treeWidget
-        treeWidget.setHeaderHidden(True)
+        self.widget = QTreeView()
+        self.widget = self.widget
+        self.widget.setHeaderHidden(True)
 
-        treeModel = QStandardItemModel()
-        rootNode = treeModel.invisibleRootItem()
+        self.model = QStandardItemModel()
+        rootNode = self.model.invisibleRootItem()
 
-        self._unchecked = TableEntry("Unchecked", font_size=12)
-        self._checked = TableEntry("Checked", font_size=12)
-        self._not_possible = TableEntry("Not Possible", font_size=12)
-        self._ignored = TableEntry("Ignored", font_size=12)
+        self._unchecked = NeighborhoodCategory("Unchecked", parent = self)
+        self._checked = LocationCategory("Checked", font_size=12)
+        self._not_possible = LocationCategory("Not Possible", font_size=12)
+        self._ignored = LocationCategory("Ignored", font_size=12)
         rootNode.appendRow(self._unchecked)
         rootNode.appendRow(self._checked)
         rootNode.appendRow(self._not_possible)
         rootNode.appendRow(self._ignored)
 
-        self.allLocations = []
+        self.allCategories = [self._unchecked, self._checked, self._not_possible, self._ignored]
+        self.allLocations = set()
 
-        for x in locations:
-           self.addLocation(x)
+        self.widget.setModel(self.model)
+        self.expandThisItem(self._unchecked)
 
-        treeWidget.setModel(treeModel)
-        treeWidget.expand(treeModel.indexFromItem(self._unchecked))
+        self.model.itemChanged.connect(lambda x: x.processCheck())
 
-        treeModel.itemChanged.connect(lambda x: x.processCheck())
-
-    def addLocation(self, location, first=False):
-        location._parent = self
+    def insertLocation(self, location, first=False):
         # Make sure it's in the set
         if location not in self.allLocations:
-            self.allLocations.append(location)
+            self.allLocations.add(location)
 
+        # Make sure it's removed from all categories
+        for category in self.allCategories:
+            category.removeLoc(location)
+
+        # Find the subtree to place it in
         if location.ignored:
             destination = self._ignored
         elif location.currently_checked:
@@ -49,17 +51,15 @@ class LocationManager:
             destination = self._not_possible
         else:
             destination = self._unchecked
-            neighborhood = getNeighborhood(location.parent_region, self.world)
-            location.setText("{} ({})".format(location.loc_name, neighborhood))
-        if first:
-            destination.insertRow(0, location)
-        else:
-            destination.appendRow(location)
+
+        destination.addLoc(location)
+
     def updateLocationPossible(self, possible_locations):
         possible_names = set(x.name for x in possible_locations)
         for x in self.allLocations:
             possible = x.loc_name in possible_names
             x.setPossible(possible)
+
     def updateLocationsIgnored(self, world):
         for x in self.allLocations:
             ignored = locationIsIgnored(world, world.get_location(x.loc_name))
@@ -71,6 +71,9 @@ class LocationManager:
             if x.currently_checked:
                 results.append(x.loc_name)
         return results
+
+    def expandThisItem(self, item):
+        self.widget.expand(self.model.indexFromItem(item))
 
 
 def locationIsIgnored(world, location):
@@ -84,44 +87,143 @@ def locationIsIgnored(world, location):
         return True
     return False
 
-
-class TableEntry(QStandardItem):
-    def __init__(self, txt='', font_size=10, color=QColor(0,0,0)):
+class LocationCategory(QStandardItem):
+    def __init__(self, txt, font_size=10, color=QColor(0,0,0)):
         super().__init__()
-
-        fnt = QFont('Open Sans', font_size)
-
         self.setEditable(False)
         self.setForeground(color)
-        self.setFont(fnt)
+        self.setFont(QFont('Open Sans', font_size))
         self.setText(txt)
+        self.locs = set()
 
-def possibleLocToString(loc, world, child_reached, adult_reached):
-    child = loc.parent_region in child_reached and loc.access_rule(world.state, spot=loc, age='child')
-    adult = loc.parent_region in adult_reached and loc.access_rule(world.state, spot=loc, age='adult')
+    def addLoc(self, loc):
+        assert loc not in self.locs
+        self.locs.add(loc)
 
-    message = "{} (in {})".format(loc, loc.parent_region)
+        found = False
+        for i in range(self.rowCount()):
+            if loc < self.child(i,0):
+                self.insertRow(i,loc)
+                found = True
+                break
+        if not found:
+            self.appendRow(loc)
 
-    if child and adult:
-        message += " (child or adult)"
-    elif child:
-        message += " (child)"
-    elif adult:
-        message += " (adult)"
+    def removeLoc(self, loc):
+        if loc not in self.locs:
+            return
+        self.locs.remove(loc)
+        self.takeRow(loc.row())
 
-    return message
+class NeighborhoodGroup(QStandardItem):
+    def __init__(self, name):
+        super().__init__()
+        self.setEditable(False)
+        self.setForeground(QColor(0, 0, 0))
+        self.setFont(QFont('Open Sans', 10))
 
-class LocationEntry(TableEntry):
-    def __init__(self, loc_name, txt, possible, parent_region, checked=False, ignored=False):
-        if possible:
-            color = QColor(0,0,0)
-        else:
-            color = QColor(255,0,0)
-        super().__init__(txt=txt, color=color)
+        self.name = name
+        self.locs = set()
+        self.updateText()
+
+    def updateText(self):
+        self.setText("{} ({})".format(self.name, len(self.locs)))
+
+    def addLoc(self, loc):
+        assert loc not in self.locs
+        self.locs.add(loc)
+
+        found = False
+        for i in range(self.rowCount()):
+            if loc < self.child(i, 0):
+                self.insertRow(i, loc)
+                found = True
+                break
+        if not found:
+            self.appendRow(loc)
+        self.updateText()
+
+    def removeLoc(self, loc):
+        if loc not in self.locs:
+            return
+        self.locs.remove(loc)
+        self.takeRow(loc.row())
+        self.updateText()
+
+    def processCheck(self):
+        pass
+    def __lt__(self, other):
+        return self.name.lower() < other.name.lower()
+
+
+class NeighborhoodCategory(QStandardItem):
+    def __init__(self, txt, parent):
+        super().__init__()
+
+        self.setEditable(False)
+        self.setForeground(QColor(0, 0, 0))
+        self.setFont(QFont('Open Sans', 10))
+        self.setText(txt)
+        self.parent = parent
+        self.locs = set()
+        self.neighborhoods={}
+
+    # Get or create+insert neighborhood
+    def getNeighborhood(self, neighborhood_name):
+        if neighborhood_name in self.neighborhoods:
+            return self.neighborhoods[neighborhood_name]
+
+        # Create it
+        neighborhood = NeighborhoodGroup(neighborhood_name)
+        self.neighborhoods[neighborhood_name] = neighborhood
+
+        # Insert it in order
+        found = False
+        for i in range(self.rowCount()):
+            if neighborhood < self.child(i, 0):
+                self.insertRow(i, neighborhood)
+                found = True
+                break
+        if not found:
+            self.appendRow(neighborhood)
+
+        self.parent.expandThisItem(neighborhood)
+        return neighborhood
+
+    def addLoc(self, loc):
+        assert loc not in self.locs
+        self.locs.add(loc)
+
+        neighborhood = self.getNeighborhood(loc.neighborhood)
+        neighborhood.addLoc(loc)
+
+    def removeLoc(self, loc):
+        if loc not in self.locs:
+            return
+        self.locs.remove(loc)
+
+        # Check all neighborhoods for removal (the neighborhood name can change)
+        for name in list(self.neighborhoods.keys()):
+            neighborhood = self.neighborhoods[name]
+            neighborhood.removeLoc(loc)
+            # Clear out this neighborhood if it is now empty
+            if len(neighborhood.locs) == 0:
+                self.removeRow(neighborhood.row())
+                del self.neighborhoods[name]
+
+
+
+class LocationEntry(QStandardItem):
+    def __init__(self, loc_name, possible, parent_region, checked=False, ignored=False, parent=None):
+        super().__init__()
+
+        self.setEditable(False)
+        self.setForeground(QColor(0, 0, 0))
+        self.setFont(QFont('Open Sans', 10))
+
         self.loc_name = loc_name
-        self.name = txt
         self.setCheckable(True)
-        self._parent = None
+        self._parent = parent
         self.currently_checked = checked
         self.parent_region = parent_region
         if checked:
@@ -130,6 +232,7 @@ class LocationEntry(TableEntry):
             self.setCheckState(Qt.CheckState.Unchecked)
         self.possible = possible
         self.ignored = ignored
+        self.updateText()
 
     def isChecked(self):
         return self.checkState() == Qt.CheckState.Checked
@@ -142,8 +245,9 @@ class LocationEntry(TableEntry):
             return
         logging.info("User has {}checked {}".format("" if new_checked else "un", self.loc_name))
         self.currently_checked = new_checked
-        self.parent().takeRow(self.row())
-        self._parent.addLocation(self, first=True)
+        self.updateText()
+        self._parent.insertLocation(self)
+
     def setPossible(self, possible):
         if possible == self.possible:
             return
@@ -153,17 +257,39 @@ class LocationEntry(TableEntry):
             color = QColor(255,0,0)
         self.setForeground(color)
         self.possible = possible
-        self.parent().takeRow(self.row())
-        self._parent.addLocation(self, first=True)
+        self.updateText()
+        self._parent.insertLocation(self)
     def setIgnored(self, ignored):
         if ignored == self.ignored:
             return
         self.ignored = ignored
-        self.parent().takeRow(self.row())
-        self._parent.addLocation(self, first=True)
+        self.updateText()
+        self._parent.insertLocation(self)
+
+    def updateText(self):
+        if self.possible:
+            color = QColor(0,0,0)
+            self.neighborhood = getNeighborhood(self.parent_region, self._parent.world)
+            text = "{} ({})".format(self.loc_name, self.neighborhood)
+        else:
+            color = QColor(255,0,0)
+            text = "{} ({})".format(self.loc_name, self.parent_region)
+            self.neighborhood = self.parent_region
+        self.setForeground(color)
+        self.setText(text)
 
     def __eq__(self, other):
         return self.loc_name == other.loc_name
+    def __hash__(self):
+        return hash(self.loc_name)
+    def __lt__(self, other):
+        if self.neighborhood.lower() < other.neighborhood.lower():
+            return True
+        if self.neighborhood.lower() == other.neighborhood.lower():
+            if self.loc_name.lower() < other.loc_name.lower():
+                return True
+        return False
+
 
 def originOfExit(exit_name):
     match = re.fullmatch("(.*) -> (.*)", exit_name)
