@@ -3,13 +3,9 @@ import ItemPool
 import GuiUtils
 from CommonUtils import *
 from ImageInvButton import ImageInvButton
+from itertools import chain
 
 total_equipment = ItemPool.item_groups['ProgressItem'] + ItemPool.item_groups['Song'] + ItemPool.item_groups['DungeonReward'] + [
-    'Bombchu Drop',
-    'Zeldas Letter',
-    'Weird Egg',
-    'Rutos Letter',
-    'Gerudo Membership Card',
     'Deku Stick Capacity',
     'Deku Shield',
     'Hylian Shield',
@@ -28,7 +24,9 @@ gui_ignore_items = [
     'Eyedrops',
     'Ice Arrows',
     'Bombchus (5)',
+    'Bombchus (10)',
     'Bombchus (20)',
+    'Bombchu Drop',
     'Bottle with Red Potion',
     'Bottle with Green Potion',
     'Bottle with Blue Potion',
@@ -40,17 +38,114 @@ gui_ignore_items = [
     'Double Defense',
     'Triforce Piece',
     'Giants Knife',
+    'Magic Bean Pack',
+    'Pocket Cucco',
+    'Sell Big Poe',
+]
+
+gui_positions = [
+    'Deku Stick Capacity',
+    'Deku Nut',
+    'Bomb Bag',
+    'Bow',
+    'Fire Arrows',
+    'Dins Fire',
+    'Kokiri Sword',
+    'Biggoron Sword',
+
+    'Slingshot',
+    'Ocarina',
+    'Bombchus',
+    'Progressive Hookshot',
+    'Light Arrows',
+    'Farores Wind',
+    'Deku Shield',
+    'Hylian Shield',
+
+    'Boomerang',
+    'Lens of Truth',
+    'Magic Bean',
+    'Megaton Hammer',
+    'Bottle',
+    'Nayrus Love',
+    'Mirror Shield',
+    'Progressive Strength Upgrade',
+
+    'Zeldas Lullaby',
+    'Eponas Song',
+    'Suns Song',
+    'Sarias Song',
+    'Song of Time',
+    'Song of Storms',
+    'Goron Tunic',
+    'Zora Tunic',
+
+    'Minuet of Forest',
+    'Prelude of Light',
+    'Bolero of Fire',
+    'Serenade of Water',
+    'Nocturne of Shadow',
+    'Requiem of Spirit',
+    'Progressive Scale',
+    'Magic Meter',
+
+    'Forest Medallion',
+    'Fire Medallion',
+    'Water Medallion',
+    'Shadow Medallion',
+    'Spirit Medallion',
+    'Light Medallion',
+    'Iron Boots',
+    'Hover Boots',
+
+    'Kokiri Emerald',
+    'Goron Ruby',
+    'Zora Sapphire',
+    'Progressive Wallet',
+    'Gerudo Membership Card',
+    'Rutos Letter',
+    'Zeldas Letter',
+    'Gold Skulltula Token',
+
+    'Small Key (Forest Temple)',
+    'Small Key (Fire Temple)',
+    'Small Key (Water Temple)',
+    'Small Key (Shadow Temple)',
+    'Small Key (Spirit Temple)',
+    'Small Key (Gerudo Training Grounds)',
+    'Small Key (Bottom of the Well)',
+    'Small Key (Gerudo Fortress)',
+
+    'Boss Key (Forest Temple)',
+    'Boss Key (Fire Temple)',
+    'Boss Key (Water Temple)',
+    'Boss Key (Shadow Temple)',
+    'Boss Key (Spirit Temple)',
+    'Boss Key (Ganons Castle)',
+    'Small Key (Ganons Castle)',
+    'Weird Egg',
+
+    'Pocket Egg',
+    'Cojiro',
+    'Odd Mushroom',
+    'Odd Potion',
+    'Poachers Saw',
+    'Broken Sword',
+    'Prescription',
+    'Eyeball Frog',
+
+    'Claim Check',
+    'Stone of Agony',
+    'Bottle with Big Poe',
+    'Blue Fire',
 ]
 
 item_limits = Counter()
-for name, item in ItemPool.vanillaSK.items():
+for name, item in chain(ItemPool.vanillaSK.items(), ItemPool.vanillaBK.items()):
     if "MQ" in name:
         continue
     item_limits[item] += 1
-for name, item in ItemPool.vanillaBK.items():
-    if "MQ" in name:
-        continue
-    item_limits[item] += 1
+
 for item in total_equipment:
     item_limits[item] += 1
 item_limits['Gold Skulltula Token'] += 100
@@ -63,10 +158,21 @@ class InventoryEntry:
         self.max = max
         self.current = current
 
+def orderGuiWidgets(inputwidgets):
+    results = []
+    widgets = [x for x in inputwidgets if x.name not in gui_ignore_items]
+
+    for item_name in gui_positions:
+        match = expectOne([x for x in widgets if x.name == item_name])
+        widgets.remove(match)
+        results.append(match)
+    results.extend(widgets)
+    return results
+
 class InventoryManager:
     def __init__(self, inventory, parent):
         self.inv_widgets = [ImageInvButton(name=x.name, max=x.max, current=x.current, parent=self) for x in inventory]
-        self.shown_widgets = [x for x in self.inv_widgets if x.name not in gui_ignore_items]
+        self.shown_widgets = orderGuiWidgets(self.inv_widgets)
         self.widget = GuiUtils.GridScrollSettingsArea(widgets=self.shown_widgets)
         self.parent = parent
 
@@ -92,6 +198,8 @@ class InventoryManager:
                 results['Buy Hylian Shield'] += x.current
             elif x.name == 'Deku Nut':
                 results['Buy Deku Nut (5)'] += x.current
+            elif x.name == 'Bombchus':
+                results['Bombchu Drop'] += x.current
 
         # Hardcoded items
         if free_scarecrow:
