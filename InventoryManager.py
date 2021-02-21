@@ -41,6 +41,7 @@ gui_ignore_items = [
     'Magic Bean Pack',
     'Pocket Cucco',
     'Sell Big Poe',
+    'Bottle with Big Poe',
 ]
 
 gui_positions = [
@@ -136,7 +137,6 @@ gui_positions = [
 
     'Claim Check',
     'Stone of Agony',
-    'Bottle with Big Poe',
     'Blue Fire',
 ]
 

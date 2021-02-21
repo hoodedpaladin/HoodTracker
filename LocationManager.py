@@ -75,16 +75,23 @@ class LocationManager:
     def expandThisItem(self, item):
         self.widget.expand(self.model.indexFromItem(item))
 
+def itemMaxed(world, itemname):
+    if itemname not in world.max_progressions:
+        itemname = itemname + " Drop"
+        assert itemname in world.max_progressions
+
+    current = world.state.prog_items[itemname]
+    maximum = world.max_progressions[itemname]
+    return current >= maximum
 
 def locationIsIgnored(world, location):
-    if location.filter_tags is not None and 'Skulltulas' in location.filter_tags:
-        if world.state.prog_items['Gold Skulltula Token'] >= world.max_progressions['Gold Skulltula Token']:
-            if world.tokensanity == 'off' or (
-                    world.tokensanity == 'dungeons' and location.scene >= 0xA) or (
-                    world.tokensanity == 'overworld' and location.scene < 0xA):
-                return True
     if location.name in world.disabled_locations:
         return True
+    if getattr(location, 'shop_non_progression', False):
+        return True
+    if location.item is not None:
+        if itemMaxed(world, location.item.name):
+            return True
     return False
 
 class LocationCategory(QStandardItem):
@@ -232,6 +239,12 @@ class LocationEntry(QStandardItem):
             self.setCheckState(Qt.CheckState.Unchecked)
         self.possible = possible
         self.ignored = ignored
+
+        self.known_item = None
+        loc = self._parent.world.get_location(self.loc_name)
+        if loc.item is not None and not getattr(loc, 'unshuffled_gs_token', False):
+            self.known_item = loc.item.name
+
         self.updateText()
 
     def isChecked(self):
@@ -270,11 +283,17 @@ class LocationEntry(QStandardItem):
         if self.possible:
             color = QColor(0,0,0)
             self.neighborhood = getNeighborhood(self.parent_region, self._parent.world)
-            text = "{} ({})".format(self.loc_name, self.neighborhood)
         else:
             color = QColor(255,0,0)
-            text = "{} ({})".format(self.loc_name, self.parent_region)
             self.neighborhood = self.parent_region
+
+        text = self.loc_name + " ("
+        if self.known_item:
+            text += self.known_item
+            text += ") ("
+        text += self.neighborhood
+        text += ")"
+
         self.setForeground(color)
         self.setText(text)
 
