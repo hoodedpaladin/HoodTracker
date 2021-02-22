@@ -126,6 +126,12 @@ gui_positions = [
     'Small Key (Ganons Castle)',
     'Weird Egg',
 
+    'Adult Trade',
+    'Stone of Agony',
+    'Blue Fire',
+]
+
+adult_trade = [
     'Pocket Egg',
     'Cojiro',
     'Odd Mushroom',
@@ -134,10 +140,7 @@ gui_positions = [
     'Broken Sword',
     'Prescription',
     'Eyeball Frog',
-
     'Claim Check',
-    'Stone of Agony',
-    'Blue Fire',
 ]
 
 item_limits = Counter()
@@ -177,6 +180,14 @@ class InventoryManager:
         self.parent = parent
 
     def collectItem(self, name, count=1):
+        # If we have an adult trade item, assume we have all the preceding trade items
+        if name in adult_trade:
+            item = expectOne([x for x in self.inv_widgets if x.name == 'Adult Trade'])
+            index = adult_trade.index(name) + 1
+            item.current = max(item.current, index)
+            assert item.current <= item.max and item.current >= 0
+            item.update()
+            return
         item = expectOne([x for x in self.inv_widgets if x.name == name])
         item.current += count
         assert item.current <= item.max and item.current >= 0
@@ -188,6 +199,13 @@ class InventoryManager:
             assert x.current >= 0
             if x.current == 0:
                 continue
+
+            # Adult trade items mean we have all preceding trade items
+            if x.name == 'Adult Trade':
+                for item in adult_trade[:x.current]:
+                    results[item] += 1
+                continue
+
             results[x.name] += x.current
             # Fixes for buyable + replaceable items
             if x.name == 'Deku Shield':
@@ -215,13 +233,24 @@ class InventoryManager:
     def getOutputFormat(self):
         results = []
         for item in self.inv_widgets:
+            if item.name == 'Adult Trade':
+                # Adult trade items mean we have all preceding trade items
+                results.extend(adult_trade[:item.current])
+                continue
             results += [item.name] * item.current
         return results
 
 def makeInventory(max_starting=False):
     global item_limits
 
-    result = [InventoryEntry(name=item, max=count, current=0) for item, count in item_limits.items()]
+    result = []
+    # Each item name is a normal widget, except for the Adult Trade items which are their own special widget
+    for item, count in item_limits.items():
+        if item in adult_trade:
+            continue
+        result.append(InventoryEntry(name=item, max=count, current=0))
+    result.append(InventoryEntry(name='Adult Trade', max=len(adult_trade), current = 0))
+
     if max_starting:
         for x in result:
             x.current = x.max

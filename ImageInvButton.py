@@ -27,20 +27,11 @@ imageNamesDict = {
     'Boomerang': 'OoT_Boomerang_Icon.png',
     'Lens of Truth': 'OoT_Lens_of_Truth_Icon.png',
     'Megaton Hammer': 'OoT_Megaton_Hammer_Icon.png',
-    'Cojiro': 'OoT_Cojiro_Icon.png',
     'Bottle': 'OoT_Bottle_Icon.png',
     'Rutos Letter': 'OoT_Letter_Icon.png',
     'Sell Big Poe': 'OoT_Big_Poe_Soul_Icon.png',
     'Magic Bean': 'OoT_Magic_Bean_Icon.png',
     'Pocket Egg': 'OoT_Weird_Egg_Icon.png',
-    'Pocket Cucco': 'OoT_Cucco_Icon.png',
-    'Odd Mushroom': 'OoT_Odd_Mushroom_Icon.png',
-    'Odd Potion': 'OoT_Odd_Potion_Icon.png',
-    'Poachers Saw': 'OoT_Poachers_Saw_Icon.png',
-    'Broken Sword': 'OoT_Broken_Giants_Knife_Icon.png',
-    'Prescription': 'OoT_Prescription_Icon.png',
-    'Eyeball Frog': 'OoT_Eyeball_Frog_Icon.png',
-    'Claim Check': 'OoT_Claim_Check_Icon.png',
     'Mirror Shield': 'OoT_Mirror_Shield_Icon.png',
     'Goron Tunic': 'OoT_Goron_Tunic_Icon.png',
     'Zora Tunic': 'OoT_Zora_Tunic_Icon.png',
@@ -94,6 +85,7 @@ imageNamesDict = {
     'Blue Fire': 'OoT_Blue_Fire_Icon.png',
     'Gold Skulltula Token': 'OoT_Token_Icon.png',
     'Deku Nut': 'OoT_Deku_Nut_Icon.png',
+    'Adult Trade': ['OoT_Weird_Egg_Icon.png', 'OoT_Cojiro_Icon.png', 'OoT_Odd_Mushroom_Icon.png', 'OoT_Odd_Potion_Icon.png', 'OoT_Poachers_Saw_Icon.png', 'OoT_Broken_Giants_Knife_Icon.png', 'OoT_Prescription_Icon.png', 'OoT_Eyeball_Frog_Icon.png', 'OoT_Claim_Check_Icon.png'],
 }
 
 helperTextDict = {
