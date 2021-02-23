@@ -103,9 +103,9 @@ gui_positions = [
     'Goron Ruby',
     'Zora Sapphire',
     'Progressive Wallet',
-    'Gerudo Membership Card',
     'Rutos Letter',
-    'Zeldas Letter',
+    'Child Trade',
+    'Adult Trade',
     'Gold Skulltula Token',
 
     'Small Key (Forest Temple)',
@@ -124,11 +124,15 @@ gui_positions = [
     'Boss Key (Spirit Temple)',
     'Boss Key (Ganons Castle)',
     'Small Key (Ganons Castle)',
-    'Weird Egg',
+    'Gerudo Membership Card',
 
-    'Adult Trade',
     'Stone of Agony',
     'Blue Fire',
+]
+
+child_trade = [
+    'Weird Egg',
+    'Zeldas Letter',
 ]
 
 adult_trade = [
@@ -188,6 +192,13 @@ class InventoryManager:
             assert item.current <= item.max and item.current >= 0
             item.update()
             return
+        elif name in child_trade:
+            item = expectOne([x for x in self.inv_widgets if x.name == 'Child Trade'])
+            index = child_trade.index(name) + 1
+            item.current = max(item.current, index)
+            assert item.current <= item.max and item.current >= 0
+            item.update()
+            return
         item = expectOne([x for x in self.inv_widgets if x.name == name])
         item.current += count
         assert item.current <= item.max and item.current >= 0
@@ -203,6 +214,10 @@ class InventoryManager:
             # Adult trade items mean we have all preceding trade items
             if x.name == 'Adult Trade':
                 for item in adult_trade[:x.current]:
+                    results[item] += 1
+                continue
+            elif x.name == 'Child Trade':
+                for item in child_trade[:x.current]:
                     results[item] += 1
                 continue
 
@@ -237,6 +252,10 @@ class InventoryManager:
                 # Adult trade items mean we have all preceding trade items
                 results.extend(adult_trade[:item.current])
                 continue
+            elif item.name == 'Child Trade':
+                # Child trade items mean we have all preceding trade items
+                results.extend(child_trade[:item.current])
+                continue
             results += [item.name] * item.current
         return results
 
@@ -246,10 +265,11 @@ def makeInventory(max_starting=False):
     result = []
     # Each item name is a normal widget, except for the Adult Trade items which are their own special widget
     for item, count in item_limits.items():
-        if item in adult_trade:
+        if item in adult_trade or item in child_trade:
             continue
         result.append(InventoryEntry(name=item, max=count, current=0))
     result.append(InventoryEntry(name='Adult Trade', max=len(adult_trade), current = 0))
+    result.append(InventoryEntry(name='Child Trade', max=len(child_trade), current = 0))
 
     if max_starting:
         for x in result:

@@ -39,7 +39,6 @@ imageNamesDict = {
     'Hover Boots': 'OoT_Hover_Boots_Icon.png',
     'Stone of Agony': 'OoT_Stone_of_Agony_Icon.png',
     'Gerudo Membership Card': 'OoT_Gerudo_Token_Icon.png',
-    'Weird Egg': 'OoT_Weird_Egg_Icon.png',
     'Biggoron Sword': 'OoT_Giants_Knife_Icon.png',
     'Fire Arrows': 'OoT_Fire_Arrow_Icon.png',
     'Light Arrows': 'OoT_Light_Arrow_Icon.png',
@@ -56,7 +55,6 @@ imageNamesDict = {
     'Magic Meter': 'OoT3D_Magic_Jar_Icon.png',
     'Bottle with Big Poe': 'OoT_Big_Poe_Soul_Icon.png',
     'Magic Bean Pack': 'OoT_Magic_Bean_Icon.png',
-    'Zeldas Letter': 'OoT_Zeldas_Letter_Icon.png',
     'Zeldas Lullaby': 'white_note.png',
     'Eponas Song': 'white_note.png',
     'Suns Song': 'white_note.png',
@@ -86,6 +84,7 @@ imageNamesDict = {
     'Gold Skulltula Token': 'OoT_Token_Icon.png',
     'Deku Nut': 'OoT_Deku_Nut_Icon.png',
     'Adult Trade': ['OoT_Weird_Egg_Icon.png', 'OoT_Cojiro_Icon.png', 'OoT_Odd_Mushroom_Icon.png', 'OoT_Odd_Potion_Icon.png', 'OoT_Poachers_Saw_Icon.png', 'OoT_Broken_Giants_Knife_Icon.png', 'OoT_Prescription_Icon.png', 'OoT_Eyeball_Frog_Icon.png', 'OoT_Claim_Check_Icon.png'],
+    'Child Trade': ['OoT_Weird_Egg_Icon.png', 'OoT_Zeldas_Letter_Icon.png']
 }
 
 helperTextDict = {
