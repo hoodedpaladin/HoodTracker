@@ -231,6 +231,7 @@ class InventoryManager:
                 results['Buy Hylian Shield'] += x.current
             elif x.name == 'Deku Nut':
                 results['Buy Deku Nut (5)'] += x.current
+                results['Deku Nut Drop'] += x.current
             elif x.name == 'Bombchus':
                 results['Bombchu Drop'] += x.current
 
