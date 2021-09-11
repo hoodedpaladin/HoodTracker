@@ -126,6 +126,10 @@ def doWeWantThisLoc(loc, world):
     if world.shuffle_grotto_entrances:
         if loc.filter_tags and 'Grottos' in loc.filter_tags and loc.rule_string == 'True':
             return False
+    # Ignore cows if cowsanity is off
+    if not world.shuffle_cows:
+        if loc.filter_tags and 'Cow' in loc.filter_tags:
+            return False
     return True
 
 # Very similar to Search.iter_reachable_locations
