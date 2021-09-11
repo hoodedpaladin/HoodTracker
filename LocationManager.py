@@ -347,7 +347,7 @@ overworld_neighborhoods = {
     'Market Entrance': ['Market Entrance'],
     'Lon Lon Ranch': ['Lon Lon Ranch'],
     'Lake Hylia': ['Lake Hylia', 'LH Fishing Island'],
-    'Goron City': ['Goron City', 'GC Darunias Chamber'],
+    'Goron City': ['Goron City', 'GC Darunias Chamber', 'GC Grotto Platform'],
     'ToT Entrance': ['ToT Entrance'],
     'Zora\'s Domain': ['Zoras Domain'],
     'Zora\'s Fountain': ['Zoras Fountain'],
