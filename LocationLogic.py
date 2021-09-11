@@ -73,3 +73,15 @@ def populateGSTokens(world):
     for loc in populate_these:
         loc.item = Item.Item('Gold Skulltula Token')
         loc.unshuffled_gs_token = True
+
+# Responsible for all unshuffled population
+def populateKnownUnshuffled(world):
+    if world.shopsanity == 'off':
+        populateVanillaShop(world)
+
+    populateGSTokens(world)
+
+    if not world.shuffle_medigoron_carpet_salesman:
+        loc = world.get_location("Wasteland Bombchu Salesman")
+        loc.item = Item.Item("Bombchus")
+        # TODO: what to populate for Medigoron?

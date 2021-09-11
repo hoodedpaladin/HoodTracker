@@ -402,9 +402,7 @@ def fillKnownExitPairs(paired_exits):
 def startWorldBasedOnData(input_data, gui_dialog):
     world = generate(input_data, gui_dialog=gui_dialog)
 
-    if world.shopsanity == 'off':
-        LocationLogic.populateVanillaShop(world)
-    LocationLogic.populateGSTokens(world)
+    LocationLogic.populateKnownUnshuffled(world)
 
     # Fix the bug in World.py code
     max_tokens = 0

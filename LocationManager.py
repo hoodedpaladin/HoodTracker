@@ -92,6 +92,9 @@ def locationIsIgnored(world, location):
     if location.item is not None:
         if itemMaxed(world, location.item.name):
             return True
+    if not world.shuffle_medigoron_carpet_salesman:
+        if location.name == "GC Medigoron":
+            return True
     return False
 
 class LocationCategory(QStandardItem):
