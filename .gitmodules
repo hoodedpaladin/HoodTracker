@@ -1,3 +1,6 @@
 [submodule "OoT-Randomizer"]
 	path = OoT-Randomizer
 	url = https://github.com/TestRunnerSRL/OoT-Randomizer.git
+[submodule "DevR"]
+	path = DevR
+	url = https://github.com/Roman971/OoT-Randomizer.git

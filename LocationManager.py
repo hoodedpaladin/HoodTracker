@@ -85,14 +85,14 @@ def itemMaxed(world, itemname):
     return current >= maximum
 
 def locationIsIgnored(world, location):
-    if location.name in world.disabled_locations:
+    if location.name in world.settings.disabled_locations:
         return True
     if getattr(location, 'shop_non_progression', False):
         return True
     if location.item is not None:
         if itemMaxed(world, location.item.name):
             return True
-    if not world.shuffle_medigoron_carpet_salesman:
+    if not world.settings.shuffle_medigoron_carpet_salesman:
         if location.name == "GC Medigoron":
             return True
     return False
@@ -368,7 +368,7 @@ overworld_neighborhoods = {
     'Water Temple': ['Water Temple Dive', 'Water Temple Cracked Wall', 'Water Temple Dragon Statue', 'Water Temple Middle Water Level', 'Water Temple Dark Link Region', 'Water Temple Highest Water Level', 'Water Temple North Basement', 'Water Temple Falling Platform Room',],
     'Shadow Temple': ['Shadow Temple Beginning', 'Shadow Temple Beyond Boat', 'Shadow Temple First Beamos', 'Shadow Temple Huge Pit', 'Shadow Temple Wind Tunnel',],
     'Spirit Temple': ['Child Spirit Temple', 'Early Adult Spirit Temple', 'Child Spirit Temple Climb', 'Spirit Temple Beyond Central Locked Door', 'Spirit Temple Beyond Final Locked Door', 'Spirit Temple Central Chamber', 'Spirit Temple Outdoor Hands', 'Desert Colossus From Spirit Lobby',],
-    'Gerudo Training Grounds': ['Gerudo Training Grounds Lobby', 'Gerudo Training Grounds Central Maze Right', 'Gerudo Training Grounds Eye Statue Lower', 'Gerudo Training Grounds Eye Statue Upper', 'Gerudo Training Grounds Hammer Room', 'Gerudo Training Grounds Heavy Block Room', 'Gerudo Training Grounds Lava Room', 'Gerudo Training Grounds Like Like Room', 'Gerudo Training Grounds Central Maze'],
+    'Gerudo Training Ground': ['Gerudo Training Ground Lobby', 'Gerudo Training Ground Central Maze Right', 'Gerudo Training Ground Eye Statue Lower', 'Gerudo Training Ground Eye Statue Upper', 'Gerudo Training Ground Hammer Room', 'Gerudo Training Ground Heavy Block Room', 'Gerudo Training Ground Lava Room', 'Gerudo Training Ground Like Like Room', 'Gerudo Training Ground Central Maze'],
     'Ganon\'s Castle': ['Ganons Castle Water Trial', 'Ganons Castle Deku Scrubs', 'Ganons Castle Forest Trial', 'Ganons Castle Light Trial', 'Ganons Castle Shadow Trial', 'Ganons Castle Spirit Trial', 'Ganons Castle Tower',],
 }
 
@@ -388,7 +388,7 @@ def getNeighborhood(region, world):
         return region_to_neighborhood[region]
     if region in redirect_region:
         return getNeighborhood(redirect_region[region], world)
-    if region in interior_regions:
+    if region in interior_regions and not world.settings.decouple_entrances:
         region_obj = world.get_region(region)
         exit_name = interior_regions[region]
         exit = expectOne([x for x in region_obj.exits if x.name == exit_name])

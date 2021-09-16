@@ -56,11 +56,11 @@ def doWeWantThisLoc(loc, world):
     if loc.name in ItemPool.fixedlocations:
         return False
     # We do not need non-progression deku scrubs unless scrubsanity or grotto shuffle is on
-    if world.shuffle_scrubs == 'off' and not world.shuffle_grotto_entrances:
+    if world.settings.shuffle_scrubs == 'off' and not world.settings.shuffle_grotto_entrances:
         if loc.filter_tags and 'Deku Scrub' in loc.filter_tags and 'Deku Scrub Upgrades' not in loc.filter_tags:
             return False
     # Don't bother with shuffled grotto chests; assume they are taken immediately
-    if world.shuffle_grotto_entrances:
+    if world.settings.shuffle_grotto_entrances:
         if loc.filter_tags and 'Grottos' in loc.filter_tags and loc.rule_string == 'True':
             return False
     return True
@@ -84,7 +84,9 @@ class HoodTrackerGui:
         self.filename = filename
         self.input_data = HoodTracker.getInputData(filename)
         self.app = QtWidgets.QApplication(sys.argv)
-        self.world, self.output_known_exits, self.output_known_exit_pairs = HoodTracker.startWorldBasedOnData(self.input_data, gui_dialog=True)
+        self.world = HoodTracker.startWorldBasedOnData(self.input_data, gui_dialog=True)
+        self.exploreManager = ExploreManager.ExploreManager(self.world, parent=self)
+        self.exploreManager.input_saved_data(self.input_data)
 
     def run(self):
 
@@ -92,7 +94,7 @@ class HoodTrackerGui:
         if not self.override_inventory:
             for item in self.input_data['equipment']:
                 self.invManager.collectItem(item)
-        self.world.state.prog_items = self.invManager.getProgItems(free_scarecrow=self.world.free_scarecrow, free_epona=self.world.no_epona_race)
+        self.world.state.prog_items = self.invManager.getProgItems(free_scarecrow=self.world.settings.free_scarecrow, free_epona=self.world.settings.no_epona_race)
 
         self.output_data = HoodTracker.solve(self.world)
 
@@ -106,9 +108,7 @@ class HoodTrackerGui:
             locationEntry = LocationManager.LocationEntry(loc_name=loc.name, possible=possible, checked=checked, parent_region=loc.parent_region.name, ignored=ignored, parent=self.locManager)
             self.locManager.insertLocation(locationEntry)
 
-
-        self.exploreManager = ExploreManager.ExploreManager(self.world, parent=self)
-        self.exploreManager.showThese(self.output_data['please_explore'], self.world, self.output_known_exits)
+        self.exploreManager.showThese(self.world)
 
         self.find_path_dialog = FindPath.FindPathDialog(all_regions=[x.name for x in self.world.regions], parent=self)
         window = DisplayWindow(invManager=self.invManager, exploreManager=self.exploreManager, locManager=self.locManager, world=self.world, find_path_dialog=self.find_path_dialog)
@@ -119,44 +119,24 @@ class HoodTrackerGui:
 
         self.input_data['equipment'] = self.invManager.getOutputFormat()
         self.input_data['checked_off'] = self.locManager.getOutputFormat()
+        output_known_exits, output_known_exit_pairs = self.exploreManager.get_output()
         if self.save_enabled:
             HoodTracker.writeResultsToFile(world=self.world,
                                            input_data=self.input_data,
                                            output_data=self.output_data,
-                                           output_known_exits=self.output_known_exits,
+                                           output_known_exits=output_known_exits,
                                            filename=self.filename,
-                                           output_known_exit_pairs=self.output_known_exit_pairs)
-
-    def addKnownExit(self, exit_name, destination_name):
-        self.output_known_exits[exit_name] = destination_name
-
-    def forgetKnownExit(self, exit_name):
-        logging.info("Forgetting exit {}".format(exit_name))
-        del self.output_known_exits[exit_name]
-        self.exploreManager.reshuffle_exit(exit_name)
-
-        # The other exit in a pair
-        if exit_name in self.output_known_exit_pairs:
-            exit_name2 = self.output_known_exit_pairs[exit_name]
-            logging.info("Forgetting paired exit {}".format(exit_name2))
-            self.exploreManager.reshuffle_exit(exit_name2)
-            del self.output_known_exits[exit_name2]
-            del self.output_known_exit_pairs[exit_name]
-            del self.output_known_exit_pairs[exit_name2]
-
-    def addKnownExitPairs(self, exit, paired_exit):
-        self.output_known_exits[exit.name] = ExploreManager.getDestinationForPairedExit(paired_exit.name)
-        self.output_known_exits[paired_exit.name] = ExploreManager.getDestinationForPairedExit(exit.name)
-        self.output_known_exit_pairs[exit.name] = paired_exit.name
-        self.output_known_exit_pairs[paired_exit.name] = exit.name
+                                           output_known_exit_pairs=output_known_exit_pairs)
 
     def updateLogic(self):
         # Reset inventory to the state of the invManager
-        self.world.state.prog_items = self.invManager.getProgItems(free_scarecrow=self.world.free_scarecrow, free_epona=self.world.no_epona_race)
+        self.world.state.prog_items = self.invManager.getProgItems(free_scarecrow=self.world.settings.free_scarecrow, free_epona=self.world.settings.no_epona_race)
+        for exit in self.exploreManager.all_shuffled_exits:
+            exit.please_explore = False
         self.output_data = HoodTracker.solve(self.world)
         self.locManager.updateLocationPossible(self.output_data['possible_locations'])
         self.locManager.updateLocationsIgnored(self.world)
-        self.exploreManager.showThese(self.output_data['please_explore'], self.world, self.output_known_exits)
+        self.exploreManager.showThese(self.world)
 
     def launch_pathfind_dialog(self):
         self.find_path_dialog.show()
@@ -169,7 +149,7 @@ def exception_hook(exctype, value, traceback):
     sys.exit(1)
 
 def main(filename):
-    sys.excepthook = exception_hook
+    #sys.excepthook = exception_hook
 
     hoodgui = HoodTrackerGui(filename)
     hoodgui.run()

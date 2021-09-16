@@ -113,7 +113,7 @@ gui_positions = [
     'Small Key (Water Temple)',
     'Small Key (Shadow Temple)',
     'Small Key (Spirit Temple)',
-    'Small Key (Gerudo Training Grounds)',
+    'Small Key (Gerudo Training Ground)',
     'Small Key (Bottom of the Well)',
     'Small Key (Gerudo Fortress)',
 

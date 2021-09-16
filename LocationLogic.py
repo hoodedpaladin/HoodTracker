@@ -32,7 +32,7 @@ def isProgressionShopItem(world, loc, itemname):
     # TODO: some of these should not be ignored
     if baseShopName(itemname) in ['Fairy\'s Spirit', 'Bottle Bug', 'Fish']:
         return False
-    if world.shopsanity == 'off' and loc.name in ignore_vanilla_locs:
+    if world.settings.shopsanity == 'off' and loc.name in ignore_vanilla_locs:
         return False
     return True
 
@@ -63,10 +63,10 @@ def populateGSTokens(world):
     gs_locs = [x for x in all_locs if x.filter_tags and 'Skulltulas' in x.filter_tags]
 
     populate_these = []
-    if world.tokensanity in ['off', 'overworld']:
+    if world.settings.tokensanity in ['off', 'overworld']:
         dungeon_gs_locs = [x for x in gs_locs if x.scene < 0xA]
         populate_these.extend(dungeon_gs_locs)
-    if world.tokensanity in ['off', 'dungeons']:
+    if world.settings.tokensanity in ['off', 'dungeons']:
         overworld_gs_locs = [x for x in gs_locs if x.scene >= 0xA]
         populate_these.extend(overworld_gs_locs)
 
@@ -76,12 +76,12 @@ def populateGSTokens(world):
 
 # Responsible for all unshuffled population
 def populateKnownUnshuffled(world):
-    if world.shopsanity == 'off':
+    if world.settings.shopsanity == 'off':
         populateVanillaShop(world)
 
     populateGSTokens(world)
 
-    if not world.shuffle_medigoron_carpet_salesman:
+    if not world.settings.shuffle_medigoron_carpet_salesman:
         loc = world.get_location("Wasteland Bombchu Salesman")
         loc.item = Item.Item("Bombchus")
         # TODO: what to populate for Medigoron?

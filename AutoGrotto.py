@@ -21,11 +21,18 @@ def allGreatFairyFountains():
         results.append(match.group(2))
     return results
 
+combine_scrub_numbers = False
 class AutoGrotto:
     def __init__(self):
         self._regions = {}
         self._regions['auto_generic_grotto'] = allGrottoRegionsWithTypes([0x3f])
-        self._regions['auto_scrub_grotto'] = allGrottoRegionsWithTypes([0x5a4, 0x5bc, 0x5b0])
+        if combine_scrub_numbers:
+            self._regions['auto_scrub_grotto'] = allGrottoRegionsWithTypes([0x5a4, 0x5bc, 0x5b0])
+        else:
+            self._regions['auto_1scrub_grotto'] = allGrottoRegionsWithTypes([0x5b0])
+            self._regions['auto_2scrub_grotto'] = allGrottoRegionsWithTypes([0x5bc])
+            self._regions['auto_3scrub_grotto'] = allGrottoRegionsWithTypes([0x5a4])
+
         self._regions['auto_fairy_fountain'] = allGrottoRegionsWithTypes([0x036D])
         self._regions['auto_great_fairy_fountain'] = allGreatFairyFountains()
         self._all = []
