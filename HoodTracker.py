@@ -249,6 +249,9 @@ def shuffleExits(world):
             continue
         assert len(x) >= 2
         assert len(x) <= 3
+        if len(x) == 2 and x[0] == 'Overworld' and not world.settings.decouple_entrances:
+            # The GV Lower Stream -> Lake Hylia exit isn't shuffled unless the exits are decoupled
+            continue
         shuffle_these.add(x[1][0])
         if len(x) > 2:
             shuffle_these.add(x[2][0])

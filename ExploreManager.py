@@ -147,9 +147,11 @@ class ExploreManager:
         self.overworld_to_interior = [getFromListByName(all_exits, name) for name in overworld_to_interior_names]
         self.interior_to_overworld = [getFromListByName(all_exits, name) for name in interior_to_overworld_names]
 
-        #overworld_to_overworld_names = [x[1][0] for x in est if x[0] == 'Overworld'] + [x[2][0] for x in est if x[0] == 'Overworld']
         overworld_to_overworld_names = []
         for x in [x for x in est if x[0] == 'Overworld']:
+            if len(x) < 3 and not self.world.settings.decouple_entrances:
+                # The GV Lower Stream -> Lake Hylia exit is not shuffled if decoupled entrances is off
+                continue
             for i in range(1, len(x)):
                 overworld_to_overworld_names.append(x[i][0])
         self.overworld_to_overworld = [getFromListByName(all_exits, name) for name in overworld_to_overworld_names]
@@ -172,6 +174,13 @@ class ExploreManager:
 
         self.all_shuffled_exits = self.overworld_to_interior + self.interior_to_overworld + self.overworld_to_overworld + self.overworld_to_grotto + self.grotto_to_overworld + self.overworld_to_dungeon + self.dungeon_to_overworld + self.owl_flight + self.spawn_warp_exits
         self.nonwarp_shuffled_exits = self.overworld_to_interior + self.interior_to_overworld + self.overworld_to_overworld + self.overworld_to_grotto + self.grotto_to_overworld + self.overworld_to_dungeon + self.dungeon_to_overworld
+        self.type_lists = [self.overworld_to_overworld,
+                           self.overworld_to_grotto,
+                           self.grotto_to_overworld,
+                           self.overworld_to_dungeon,
+                           self.dungeon_to_overworld,
+                           self.overworld_to_interior,
+                           self.interior_to_overworld]
 
         self.all_exits = [x for region in world.regions for x in region.exits]
         self.exits_dict = {}
@@ -191,8 +200,6 @@ class ExploreManager:
             self.backwards_substitute[sub_name].append(destination)
 
         one_entrance_places = self.overworld_to_grotto + self.overworld_to_interior + self.overworld_to_dungeon
-        #self.region_to_oneentrance = {str(x.connected_region): str(x) for x in one_entrance_places}
-        #self.oneentrance_to_region = {str(x): str(x.parent_region) for x in one_entrance_places}
         self.region_to_oneentrance = {}
         self.oneentrance_to_region = {}
         for exit in one_entrance_places:
@@ -228,33 +235,22 @@ class ExploreManager:
 
         # Find the list of possible destinations based on rules for various types of exit
         possible = None
+        self.update_consumed_flag()
         if exit in self.owl_flight:
             possible = owl_destinations
         elif exit in self.spawn_warp_exits:
             possible = spawn_warp_destinations
         elif world.settings.mix_entrance_pools != 'off':
-            self.update_consumed_flag()
-            possible = [str(x) for x in self.nonwarp_shuffled_exits if not x.consumed]
-            possible = [attemptLookup(x, self.oneentrance_to_region) for x in possible]
-        elif exit in self.interior_to_overworld:
-            possible = [str(x) for x in self.overworld_to_interior if x.shuffled]
-        elif exit in self.overworld_to_interior:
-            check_these = [x for x in self.overworld_to_interior if not x.shuffled]
-            interiors = [x.parent_region.name for x in self.interior_to_overworld]
-            for x in check_these:
-                interiors.remove(x.connected_region)
-            possible = interiors
-        elif exit in self.overworld_to_overworld:
-            possible = [str(x) for x in self.overworld_to_overworld if x.shuffled and x != exit]
-        elif exit in self.overworld_to_grotto:
-            possible = [str(x.parent_region) for x in self.grotto_to_overworld if x.shuffled]
-        elif exit in self.overworld_to_dungeon:
-            possible = [str(x.parent_region) for x in self.dungeon_to_overworld if x.shuffled]
-        elif exit in self.dungeon_to_overworld:
-            # This only happens if known exits are deleted in a weird way, but whatever
-            possible = [str(x.parent_region) for x in self.overworld_to_dungeon if x.shuffled]
-
+            opposite_exit = self.exits_dict[getOppositeExitName(exit_name)]
+            possible = [str(x) for x in self.nonwarp_shuffled_exits if not x.consumed and x != opposite_exit]
+        else:
+            type_list = expectOne([x for x in self.type_lists if exit in x])
+            opposite_exit = self.exits_dict[getOppositeExitName(exit_name)]
+            possible = [str(x) for x in type_list if not x.consumed and x != opposite_exit]
         assert possible is not None
+
+        # Simplify to a region name if there is only one entrance to that region
+        possible = [attemptLookup(x, self.oneentrance_to_region) for x in possible]
 
         # Replace destination names with automatic substitute keywords
         possible = [self.substitute_helper(x, self.world) for x in possible]
@@ -263,12 +259,11 @@ class ExploreManager:
         possible = list(set(possible))
 
         # Reformat the names from X -> Y to Y (from X)
-        if self.world.settings.decouple_entrances:
-            for i in range(len(possible)):
-                if " -> " in possible[i]:
-                    match = re.match("(.+) -> (.+)", possible[i])
-                    assert match
-                    possible[i] = "{} (from {})".format(match.group(2), match.group(1))
+        for i in range(len(possible)):
+            if " -> " in possible[i]:
+                match = re.match("(.+) -> (.+)", possible[i])
+                assert match
+                possible[i] = "{} (from {})".format(match.group(2), match.group(1))
 
         # Alphabetize
         return sorted(possible)
@@ -280,9 +275,6 @@ class ExploreManager:
 
         # One-entrance places
         one_entrance_places = self.overworld_to_grotto + self.overworld_to_interior + self.overworld_to_dungeon
-
-        # If this is set at the end of the function, we will connect the reverse
-        paired_exit = None
 
         # For automatic substitute names, find a region that is not connected to ANYTHING
         if destination_name in self.backwards_substitute:
@@ -299,12 +291,13 @@ class ExploreManager:
                 destination_name = found
 
         # Sanity checks based on what kind of connection this is
-        consumed_exit = None
         if exit in self.owl_flight:
             assert destination_name in owl_destinations
+            self.makeConnection(exit, destination_name, consumed_exit=None)
         elif exit in self.spawn_warp_exits:
             assert destination_name in spawn_warp_destinations
-        elif self.world.settings.decouple_entrances:
+            self.makeConnection(exit, destination_name, consumed_exit=None)
+        else:
             # Either the destination is one word, which came from the oneentrance table
             # Or it's been turned into the form X (from Y)
             # Either way, we just need a destination name and a consumed exit from it
@@ -320,42 +313,27 @@ class ExploreManager:
                 destination_name = match.group(1)
                 exit_name = "{} -> {}".format(match.group(2), match.group(1))
                 consumed_exit = self.exits_dict[exit_name]
-        elif exit in self.overworld_to_overworld:
-            paired_exit = self.exits_dict[destination_name]
-            if not self.world.settings.decouple_entrances:
-                assert paired_exit in self.overworld_to_overworld
-                assert paired_exit.shuffled
-            assert paired_exit != exit
 
-            # Our destination is the destination region of the opposite of the paired exit
-            destination_name = getDestinationForPairedExit(paired_exit.name)
-        elif exit in one_entrance_places:
-            # Make sure it is unique among one_entrance_places, but other types of connection are OK
-            check_these = [x for x in one_entrance_places if not x.shuffled]
-            leading_to = [x for x in check_these if x.connected_region == destination_name]
-            assert len(leading_to) == 0
-
-            reverse_exits = self.grotto_to_overworld + self.interior_to_overworld + self.dungeon_to_overworld
-            paired_exit = expectOne([x for x in reverse_exits if x.parent_region.name == destination_name])
-        elif exit in self.interior_to_overworld:
-            paired_exit = self.exits_dict[destination_name]
-            assert paired_exit in self.overworld_to_interior
-            assert paired_exit.shuffled
-
-            # Our destination is the destination region of the opposite of the paired exit
-            destination_name = getDestinationForPairedExit(paired_exit.name)
-            pass
-        else:
-            raise Exception("Unknown connection type")
+            if self.world.settings.decouple_entrances:
+                self.makeConnection(exit, destination_name, consumed_exit=consumed_exit)
+            else:
+                # The decoupled pattern is: (exit a->b) consumed (exit c->d) and goes to d
+                # If it's coupled, then the reverse path is: (exit d->c) consumed (exit b->a) and goes to a
+                # B and C are irrelevant except to know which doorway it is, but make sure that c->d and b->a are consumed
+                #
+                # There is enough info if we say that (exit a->b) is paired with (exit d->c),
+                # and this is symmetrical to save in text (i.e. (d->c) pairswith (a->b) is the same)
+                # So we will follow this in code too
+                paired_exit_name = getOppositeExitName(str(consumed_exit))
+                paired_exit = self.exits_dict[paired_exit_name]
+                self.makeCoupledConnection(exit, paired_exit)
 
         # Success
-        self.makeConnection(exit, destination_name, paired_exit, consumed_exit=consumed_exit)
         # Update the display with new logic
         self.parent.updateLogic()
 
-    # Make a single connection, or a paired connection if paired_exit is not none
-    # We make sure the HoodTrackerGui parent remembers this single/paired connection
-    def makeConnection(self, exit, destination_name, paired_exit, redundant_okay=False, consumed_exit=None):
+    # Make a single connection
+    def makeConnection(self, exit, destination_name, redundant_okay=False, consumed_exit=None):
         if not exit.shuffled:
             assert redundant_okay
             assert exit.connected_region == destination_name
@@ -369,22 +347,22 @@ class ExploreManager:
             exit.consumed_exit = consumed_exit
             self.consumed_flag_dirty = True
 
-        if paired_exit:
-            exit.coupled_exit = paired_exit
-            exit.consumed_exit = paired_exit
-            self.consumed_flag_dirty = True
-            # Our destination is the destination region of the opposite of the paired exit
-            paired_exit_destination = getDestinationForPairedExit(exit.name)
-            if not paired_exit.shuffled:
-                assert redundant_okay
-                assert paired_exit.connected_region == paired_exit_destination
-
-            paired_exit.shuffled = False
-            paired_exit.marked_known = True
-            paired_exit.please_explore = False
-            paired_exit.connected_region = paired_exit_destination
-            paired_exit.coupled_exit = exit
-            paired_exit.consumed_exit = exit
+    def makeCoupledConnection(self, exit1, exit2):
+        exits = [exit1, exit2]
+        consumed_exits = [self.exits_dict[getOppositeExitName(str(x))] for x in exits]
+        self.consumed_flag_dirty = True
+        for i,x in enumerate(exits):
+            x.shuffled = False
+            x.please_explore = False
+            x.marked_known = True
+            other_index = (i+1)%2
+            x.coupled_exit = exits[other_index]
+            x.consumed_exit = consumed_exits[other_index]
+            # Destination = destination of the consumed exit
+            # (but use the name, i.e. the canonical destination, not the struct)
+            match = re.match("(.+) -> (.+)", str(x.consumed_exit))
+            assert match
+            x.connected_region = match.group(2)
 
     # Returns the substitute name for a region
     # If the world is supplied and the world has an entrance leading to this region already, don't substitute it
@@ -450,7 +428,7 @@ class ExploreManager:
                 exit, destination_region = match.groups()
                 consumed_exit = None
             exit = self.exits_dict[exit]
-            self.makeConnection(exit, destination_region, None, consumed_exit=consumed_exit)
+            self.makeConnection(exit, destination_region, consumed_exit=consumed_exit)
 
         for line in input_data['paired_exits']:
             match = re.match("(.*) pairswith (.*)", line)
@@ -458,14 +436,14 @@ class ExploreManager:
             exit1, exit2 = match.groups()
             exit1 = self.exits_dict[exit1]
             exit2 = self.exits_dict[exit2]
-            self.makeConnection(exit1, getDestinationForPairedExit(exit1), exit2)
+            self.makeCoupledConnection(exit1, exit2)
 
     def get_output(self):
         output_known_exits = []
         output_known_paired_exits = []
-        for exit in self.all_shuffled_exits:
-            if not getattr(exit, "marked_known", False):
-                continue
+        do_these = [x for x in self.all_shuffled_exits if getattr(x, "marked_known", False)]
+        while len(do_these):
+            exit = do_these.pop()
             assert not exit.shuffled
             if not getattr(exit, "coupled_exit", None):
                 consumed_exit = getattr(exit, "consumed_exit", None)
@@ -475,4 +453,5 @@ class ExploreManager:
                     output_known_exits.append("{} goesto {} (Consumes {})".format(exit, exit.connected_region, consumed_exit))
             else:
                 output_known_paired_exits.append("{} pairswith {}".format(exit, exit.coupled_exit))
+                do_these.remove(exit.coupled_exit)
         return output_known_exits, output_known_paired_exits
