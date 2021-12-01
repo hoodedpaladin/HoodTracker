@@ -205,6 +205,15 @@ class InventoryManager:
         assert item.current <= item.max and item.current >= 0
         item.update()
 
+    # Other aliases for buyable / replaceable items
+    item_aliases = {
+        'Deku Shield': 'Buy Deku Shield',
+        'Deku Stick Capacity': 'Deku Stick Drop',
+        'Hylian Shield': 'Buy Hylian Shield',
+        'Deku Nut': 'Deku Nut Drop',
+        'Bombchus': 'Bombchu Drop',
+    }
+
     def getProgItems(self, world):
         results = Counter()
         for x in self.inv_widgets:
@@ -224,17 +233,8 @@ class InventoryManager:
 
             results[x.name] += x.current
             # Fixes for buyable + replaceable items
-            if x.name == 'Deku Shield':
-                results['Buy Deku Shield'] += x.current
-            elif x.name == 'Deku Stick Capacity':
-                results['Deku Stick Drop'] += x.current
-            elif x.name == 'Hylian Shield':
-                results['Buy Hylian Shield'] += x.current
-            elif x.name == 'Deku Nut':
-                results['Buy Deku Nut (5)'] += x.current
-                results['Deku Nut Drop'] += x.current
-            elif x.name == 'Bombchus':
-                results['Bombchu Drop'] += x.current
+            if x.name in self.item_aliases:
+                results[self.item_aliases[x.name]] += x.current
 
         # Hardcoded items
         if world.settings.free_scarecrow:
