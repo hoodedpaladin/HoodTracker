@@ -14,6 +14,7 @@ total_equipment = ItemPool.item_groups['ProgressItem'] + ItemPool.item_groups['S
     'Progressive Strength Upgrade',
     'Progressive Scale',
     'Progressive Wallet',
+    'Progressive Wallet',
     'Blue Fire',
     'Deku Nut',
 ]
