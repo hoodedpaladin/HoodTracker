@@ -119,15 +119,15 @@ item_events = {
 
 def doWeWantThisLoc(loc, world):
     # Deku scrubs that don't have upgrades can be ignored, but not if scrub shuffle or grotto shuffle is on
-    if world.shuffle_scrubs == 'off' and not world.shuffle_grotto_entrances:
+    if world.settings.shuffle_scrubs == 'off' and not world.settings.shuffle_grotto_entrances:
         if loc.filter_tags and 'Deku Scrub' in loc.filter_tags and 'Deku Scrub Upgrades' not in loc.filter_tags:
             return False
     # Generic grottos with chests are assumed to be looted immediately when you find a grotto, so ignore them
-    if world.shuffle_grotto_entrances:
+    if world.settings.shuffle_grotto_entrances:
         if loc.filter_tags and 'Grottos' in loc.filter_tags and loc.rule_string == 'True':
             return False
     # Ignore cows if cowsanity is off
-    if not world.shuffle_cows:
+    if not world.settings.shuffle_cows:
         if loc.filter_tags and 'Cow' in loc.filter_tags:
             return False
     return True
@@ -218,22 +218,27 @@ def solve(world, starting_region='Root'):
 def shuffleExits(world):
     settings_to_types_dict = {
         'shuffle_dungeon_entrances': ['Dungeon'],
-        'shuffle_interior_entrances': ['Interior'],
         'shuffle_grotto_entrances': ['Grotto', 'Grave'],
         'shuffle_overworld_entrances': ['Overworld'],
         'owl_drops': ['OwlDrop'],
         'warp_songs': ['WarpSong'],
         'spawn_positions': ['Spawn'],
-        'shuffle_special_interior_entrances': ['SpecialInterior'],
     }
     shuffled_types = []
 
     for setting, types in settings_to_types_dict.items():
-        if getattr(world, setting):
+        if getattr(world.settings, setting):
             shuffled_types.extend(types)
 
+    interior_options_dict = {
+        'off': [],
+        'simple': ['Interior'],
+        'all': ['Interior', 'SpecialInterior'],
+    }
+    shuffled_types.extend(interior_options_dict[world.settings.shuffle_interior_entrances])
+
     # Complex exceptions
-    if world.shuffle_grotto_entrances and world.shuffle_special_interior_entrances:
+    if 'Grave' in shuffled_types and 'SpecialInterior' in shuffled_types:
         types.append('SpecialGrave')
 
     shuffle_these = set()
@@ -310,7 +315,7 @@ total_equipment = ItemPool.item_groups['ProgressItem'] + ItemPool.item_groups['S
 'Small Key (Shadow Temple)',
 'Small Key (Spirit Temple)',
 'Small Key (Gerudo Fortress)',
-'Small Key (Gerudo Training Grounds)',
+'Small Key (Gerudo Training Ground)',
 'Small Key (Ganons Castle)',
 'Boss Key (Forest Temple)',
 'Boss Key (Fire Temple)',
@@ -406,13 +411,13 @@ def startWorldBasedOnData(input_data, gui_dialog):
 
     # Fix the bug in World.py code
     max_tokens = 0
-    if world.bridge == 'tokens':
-        max_tokens = max(max_tokens, world.bridge_tokens)
-    if world.lacs_condition == 'tokens':
-        max_tokens = max(max_tokens, world.lacs_tokens)
+    if world.settings.bridge == 'tokens':
+        max_tokens = max(max_tokens, world.settings.bridge_tokens)
+    if world.settings.lacs_condition == 'tokens':
+        max_tokens = max(max_tokens, world.settings.lacs_tokens)
     tokens = [50, 40, 30, 20, 10]
     for t in tokens:
-        if f'Kak {t} Gold Skulltula Reward' not in world.disabled_locations:
+        if f'Kak {t} Gold Skulltula Reward' not in world.settings.disabled_locations:
             max_tokens = max(max_tokens, t)
     world.max_progressions['Gold Skulltula Token'] = max_tokens
 

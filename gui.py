@@ -56,11 +56,11 @@ def doWeWantThisLoc(loc, world):
     if loc.name in ItemPool.fixedlocations:
         return False
     # We do not need non-progression deku scrubs unless scrubsanity or grotto shuffle is on
-    if world.shuffle_scrubs == 'off' and not world.shuffle_grotto_entrances:
+    if world.settings.shuffle_scrubs == 'off' and not world.settings.shuffle_grotto_entrances:
         if loc.filter_tags and 'Deku Scrub' in loc.filter_tags and 'Deku Scrub Upgrades' not in loc.filter_tags:
             return False
     # Don't bother with shuffled grotto chests; assume they are taken immediately
-    if world.shuffle_grotto_entrances:
+    if world.settings.shuffle_grotto_entrances:
         if loc.filter_tags and 'Grottos' in loc.filter_tags and loc.rule_string == 'True':
             return False
     return True
