@@ -205,7 +205,7 @@ class InventoryManager:
         assert item.current <= item.max and item.current >= 0
         item.update()
 
-    def getProgItems(self, free_scarecrow, free_epona):
+    def getProgItems(self, world):
         results = Counter()
         for x in self.inv_widgets:
             assert x.current >= 0
@@ -237,10 +237,14 @@ class InventoryManager:
                 results['Bombchu Drop'] += x.current
 
         # Hardcoded items
-        if free_scarecrow:
+        if world.settings.free_scarecrow:
             results['Scarecrow Song'] += 1
-        if free_epona:
+        if world.settings.no_epona_race:
             results['Epona'] += 1
+        if not world.keysanity and not world.dungeon_mq['Fire Temple']:
+            results['Small Key (Fire Temple)'] += 1
+        if world.settings.shuffle_smallkeys == 'vanilla' and world.dungeon_mq['Spirit Temple']:
+            results['Small Key (Spirit Temple)'] += 3
 
         return results
 

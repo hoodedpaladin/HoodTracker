@@ -92,7 +92,7 @@ class HoodTrackerGui:
         if not self.override_inventory:
             for item in self.input_data['equipment']:
                 self.invManager.collectItem(item)
-        self.world.state.prog_items = self.invManager.getProgItems(free_scarecrow=self.world.free_scarecrow, free_epona=self.world.no_epona_race)
+        self.world.state.prog_items = self.invManager.getProgItems(world=self.world)
 
         self.output_data = HoodTracker.solve(self.world)
 
@@ -152,7 +152,7 @@ class HoodTrackerGui:
 
     def updateLogic(self):
         # Reset inventory to the state of the invManager
-        self.world.state.prog_items = self.invManager.getProgItems(free_scarecrow=self.world.free_scarecrow, free_epona=self.world.no_epona_race)
+        self.world.state.prog_items = self.invManager.getProgItems(world=self.world)
         self.output_data = HoodTracker.solve(self.world)
         self.locManager.updateLocationPossible(self.output_data['possible_locations'])
         self.locManager.updateLocationsIgnored(self.world)
