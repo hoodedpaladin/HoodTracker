@@ -52,6 +52,18 @@ def getSettings(input_data, gui_dialog=None):
     settings.update_with_settings_string(settings_string)
     return settings
 
+def determine_mq_dungeons(world, input_data):
+    if 'dungeon_mqs' not in input_data:
+        # No data about MQs yet; what do we know?
+        # Start with all 12 as vanilla unless it's non-random all-MQ
+        if world.settings.mq_dungeons_random or world.settings.mq_dungeons < 12:
+            input_data['dungeon_mqs'] = []
+        else:
+            input_data['dungeon_mqs'] = [name for name in world.dungeon_mq.keys()]
+
+    for name in world.dungeon_mq:
+        world.dungeon_mq[name] = True if name in input_data['dungeon_mqs'] else False
+
 def generate(input_data, gui_dialog):
     settings = getSettings(input_data, gui_dialog=gui_dialog)
 
@@ -60,10 +72,12 @@ def generate(input_data, gui_dialog):
 
     worlds = []
     for i in range(0, settings.world_count):
-        worlds.append(World(i, settings))
+        worlds.append(World(i, settings, resolveRandomizedSettings=False))
         worlds[-1].ensure_tod_access = False
 
     for id, world in enumerate(worlds):
+        determine_mq_dungeons(world, input_data)
+
         if settings.logic_rules == 'glitched':
             overworld_data = os.path.join(data_path('Glitched World'), 'Overworld.json')
         else:
@@ -464,7 +478,7 @@ def possibleLocToString(loc, world, child_reached, adult_reached):
 
 def writeResultsToFile(world, input_data, output_data, output_known_exits, filename, output_known_exit_pairs, priorities=None):
     # Propagate input data to output
-    for key in ['equipment', 'checked_off', 'one_wallet', 'two_wallets']:
+    for key in ['equipment', 'checked_off', 'one_wallet', 'two_wallets', 'dungeon_mqs']:
         output_data[key] = input_data[key]
     output_data['settings_string'] = [world.settings.settings_string]
 
@@ -493,10 +507,8 @@ def writeResultsToFile(world, input_data, output_data, output_known_exits, filen
     shuffled_exits = [x.name for x in all_exits if x.shuffled]
     output_data['other_shuffled_exits'] = [x for x in shuffled_exits if x not in output_data['please_explore']]
 
-    # Format the known_exits data as "<exit> goesto <destination>", sorted the way all_exits is.
-    # This will replace the automatic keywords with real region names.
-    output_data['known_exits'] = ["{} goesto {}".format(exit.name, output_known_exits[exit.name]) for exit in all_exits if exit.name in output_known_exits and exit.name not in output_known_exit_pairs]
-    output_data['paired_exits'] = formatPairedExits(output_known_exit_pairs)
+    # Turn the known_exits data into formatted text
+    output_data = output_data | exit_information_to_text(all_exits, output_known_exits, output_known_exit_pairs)
 
     # Format the please_explore area as "<exit> goesto ?" to make it easier on the player
     please_explore_locs = [str(x) for x in all_exits if str(x) in output_data['please_explore']]
@@ -524,6 +536,13 @@ def formatPairedExits(known_exit_twins):
         result.append("{} pairswith {}".format(item1, item2))
 
     return result
+
+# Turn the known-exit dictionaries into text
+def exit_information_to_text(all_exits, known_exits, known_exit_pairs):
+    known_exits = ["{} goesto {}".format(exit.name, known_exits[exit.name]) for exit in all_exits if exit.name in known_exits and exit.name not in known_exit_pairs]
+    paired_exits = formatPairedExits(known_exit_pairs)
+    return {'known_exits':known_exits, 'paired_exits':paired_exits}
+
 
 def textmode(filename):
     input_data = getInputData(filename)

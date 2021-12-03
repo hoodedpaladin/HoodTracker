@@ -75,6 +75,17 @@ class LocationManager:
     def expandThisItem(self, item):
         self.widget.expand(self.model.indexFromItem(item))
 
+    def clear_locations(self):
+        for location in self.allLocations:
+            for category in self.allCategories:
+                category.removeLoc(location)
+        self.allLocations = set()
+
+    def update_world(self, world):
+        self.world = world
+        self.clear_locations()
+
+
 def itemMaxed(world, itemname):
     if itemname not in world.max_progressions:
         itemname = itemname + " Drop"
@@ -355,20 +366,20 @@ overworld_neighborhoods = {
     'Castle Grounds': ['Castle Grounds', 'HC Garden Locations'],
     'Desert Colossus': ['Desert Colossus'],
     'Haunted Wasteland': ['Haunted Wasteland'],
-    'Ice Cavern': ['Ice Cavern'],
+    'Ice Cavern': ['Ice Cavern', 'Ice Cavern Map Room', 'Ice Cavern Iron Boots Region', 'Ice Cavern Compass Room',],
     'Ganon\'s Castle Grounds': ['Ganons Castle Grounds'],
     'Gerudo Valley': ['Gerudo Valley', 'GV Upper Stream', 'GV Crate Ledge', 'GV Fortress Side',],
 
-    'Deku Tree': ['Deku Tree Slingshot Room', 'Deku Tree Lobby', 'Deku Tree Boss Room', 'Deku Tree Basement Backroom'],
-    'Dodongo\'s Cavern': ['Dodongos Cavern Climb', 'Dodongos Cavern Lobby', 'Dodongos Cavern Far Bridge', 'Dodongos Cavern Boss Area', 'Dodongos Cavern Staircase Room'],
-    'Jabu Jabu\'s Belly': ['Jabu Jabus Belly Boss Area', 'Jabu Jabus Belly Depths', 'Jabu Jabus Belly Main'],
-    'Bottom of the Well': ['Bottom of the Well Main Area'],
-    'Forest Temple': ['Forest Temple Lobby', 'Forest Temple NW Outdoors', 'Forest Temple NE Outdoors', 'Forest Temple Outdoors High Balconies', 'Forest Temple Block Push Room', 'Forest Temple Boss Region', 'Forest Temple Bow Region', 'Forest Temple Falling Room', 'Forest Temple Outside Upper Ledge', 'Forest Temple Straightened Hall'],
-    'Fire Temple': ['Fire Temple Lower', 'Fire Temple Big Lava Room', 'Fire Temple Middle', 'Fire Temple Upper'],
-    'Water Temple': ['Water Temple Dive', 'Water Temple Cracked Wall', 'Water Temple Dragon Statue', 'Water Temple Middle Water Level', 'Water Temple Dark Link Region', 'Water Temple Highest Water Level', 'Water Temple North Basement', 'Water Temple Falling Platform Room',],
-    'Shadow Temple': ['Shadow Temple Beginning', 'Shadow Temple Beyond Boat', 'Shadow Temple First Beamos', 'Shadow Temple Huge Pit', 'Shadow Temple Wind Tunnel',],
-    'Spirit Temple': ['Child Spirit Temple', 'Early Adult Spirit Temple', 'Child Spirit Temple Climb', 'Spirit Temple Beyond Central Locked Door', 'Spirit Temple Beyond Final Locked Door', 'Spirit Temple Central Chamber', 'Spirit Temple Outdoor Hands', 'Desert Colossus From Spirit Lobby',],
-    'Gerudo Training Ground': ['Gerudo Training Ground Lobby', 'Gerudo Training Ground Central Maze Right', 'Gerudo Training Ground Eye Statue Lower', 'Gerudo Training Ground Eye Statue Upper', 'Gerudo Training Ground Hammer Room', 'Gerudo Training Ground Heavy Block Room', 'Gerudo Training Ground Lava Room', 'Gerudo Training Ground Like Like Room', 'Gerudo Training Ground Central Maze'],
+    'Deku Tree': ['Deku Tree Slingshot Room', 'Deku Tree Lobby', 'Deku Tree Boss Room', 'Deku Tree Basement Backroom', 'Deku Tree Compass Room', 'Deku Tree Basement Water Room Front', 'Deku Tree Basement Ledge', 'Deku Tree Basement Ledge', 'Deku Tree Basement Water Room Back', 'Deku Tree Basement Back Room',],
+    'Dodongo\'s Cavern': ['Dodongos Cavern Climb', 'Dodongos Cavern Lobby', 'Dodongos Cavern Far Bridge', 'Dodongos Cavern Boss Area', 'Dodongos Cavern Staircase Room', 'Dodongos Cavern Bomb Bag Area', 'Dodongos Cavern Lower Right Side',],
+    'Jabu Jabu\'s Belly': ['Jabu Jabus Belly Boss Area', 'Jabu Jabus Belly Depths', 'Jabu Jabus Belly Main', 'Jabu Jabus Belly Beginning',],
+    'Bottom of the Well': ['Bottom of the Well Main Area', 'Bottom of the Well Perimeter', 'Bottom of the Well Middle',],
+    'Forest Temple': ['Forest Temple Lobby', 'Forest Temple NW Outdoors', 'Forest Temple NE Outdoors', 'Forest Temple Outdoors High Balconies', 'Forest Temple Block Push Room', 'Forest Temple Boss Region', 'Forest Temple Bow Region', 'Forest Temple Falling Room', 'Forest Temple Outside Upper Ledge', 'Forest Temple Straightened Hall', 'Forest Temple After Block Puzzle', 'Forest Temple Central Area', 'Forest Temple NE Outdoors Ledge', 'Forest Temple Outdoor Ledge', 'Forest Temple Outdoors Top Ledges',],
+    'Fire Temple': ['Fire Temple Lower', 'Fire Temple Big Lava Room', 'Fire Temple Middle', 'Fire Temple Upper', 'Fire Big Lava Room', 'Fire Boss Room', 'Fire Lower Locked Door', 'Fire Lower Maze', 'Fire Upper Maze',],
+    'Water Temple': ['Water Temple Dive', 'Water Temple Cracked Wall', 'Water Temple Dragon Statue', 'Water Temple Middle Water Level', 'Water Temple Dark Link Region', 'Water Temple Highest Water Level', 'Water Temple North Basement', 'Water Temple Falling Platform Room', 'Water Temple Basement Gated Areas', 'Water Temple Lobby', 'Water Temple Lowered Water Levels',],
+    'Shadow Temple': ['Shadow Temple Beginning', 'Shadow Temple Beyond Boat', 'Shadow Temple First Beamos', 'Shadow Temple Huge Pit', 'Shadow Temple Wind Tunnel', 'Shadow Temple Dead Hand Area', 'Shadow Temple Invisible Maze', 'Shadow Temple Lower Huge Pit', 'Shadow Temple Upper Huge Pit',],
+    'Spirit Temple': ['Child Spirit Temple', 'Early Adult Spirit Temple', 'Child Spirit Temple Climb', 'Spirit Temple Beyond Central Locked Door', 'Spirit Temple Beyond Final Locked Door', 'Spirit Temple Central Chamber', 'Spirit Temple Outdoor Hands', 'Desert Colossus From Spirit Lobby', 'Spirit Temple Lobby', 'Spirit Temple Shared', 'Adult Spirit Temple', 'Lower Adult Spirit Temple', 'Mirror Shield Hand', 'Silver Gauntlets Hand', 'Spirit Temple Boss Area',],
+    'Gerudo Training Ground': ['Gerudo Training Ground Lobby', 'Gerudo Training Ground Central Maze Right', 'Gerudo Training Ground Eye Statue Lower', 'Gerudo Training Ground Eye Statue Upper', 'Gerudo Training Ground Hammer Room', 'Gerudo Training Ground Heavy Block Room', 'Gerudo Training Ground Lava Room', 'Gerudo Training Ground Like Like Room', 'Gerudo Training Ground Central Maze', 'Gerudo Training Ground Left Side', 'Gerudo Training Ground Right Side', 'Gerudo Training Ground Back Areas', 'Gerudo Training Ground Stalfos Room', 'Gerudo Training Ground Underwater',],
     'Ganon\'s Castle': ['Ganons Castle Water Trial', 'Ganons Castle Deku Scrubs', 'Ganons Castle Forest Trial', 'Ganons Castle Light Trial', 'Ganons Castle Shadow Trial', 'Ganons Castle Spirit Trial', 'Ganons Castle Tower',],
 }
 

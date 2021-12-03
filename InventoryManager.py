@@ -149,10 +149,12 @@ adult_trade = [
 ]
 
 item_limits = Counter()
+mq_item_limits = Counter()
 for name, item in chain(ItemPool.vanillaSK.items(), ItemPool.vanillaBK.items()):
     if "MQ" in name:
-        continue
-    item_limits[item] += 1
+        mq_item_limits[item] += 1
+    else:
+        item_limits[item] += 1
 
 for item in total_equipment:
     item_limits[item] += 1
@@ -183,6 +185,9 @@ class InventoryManager:
         self.shown_widgets = orderGuiWidgets(self.inv_widgets)
         self.widget = GuiUtils.GridScrollSettingsArea(widgets=self.shown_widgets)
         self.parent = parent
+        self.widgets_dict = dict()
+        for x in self.inv_widgets:
+            self.widgets_dict[x.name] = x
 
     def collectItem(self, name, count=1):
         # If we have an adult trade item, assume we have all the preceding trade items
@@ -265,14 +270,45 @@ class InventoryManager:
             results += [item.name] * item.current
         return results
 
-def makeInventory(max_starting=False):
+    # Redo the small key amounts for vanilla/MQ
+    def update_world(self, world):
+        mq_items = get_mq_items(world)
+        key_names = ["Small Key ({})".format(name) for name in world.dungeon_mq]
+        for key_name in key_names:
+            if key_name not in self.widgets_dict:
+                continue
+            widget = self.widgets_dict[key_name]
+            amount = get_item_limit(key_name, mq_items)
+            widget.update_limit(amount)
+
+# Determine which small key counts are vanilla or MQ
+# Returns an empty list for vanilla
+def get_mq_items(world):
+    results = set()
+    for dungeon_name, is_mq in world.dungeon_mq.items():
+        if not is_mq:
+            continue
+        smallkeyname = "Small Key ({})".format(dungeon_name)
+        results.add(smallkeyname)
+    return results
+
+# Picks either the regular item limit or the MQ item limit
+def get_item_limit(item_name, mq_items):
+    if item_name in mq_items:
+        return mq_item_limits[item_name]
+    else:
+        return item_limits[item_name]
+
+def makeInventory(max_starting=False, world=None):
     global item_limits
 
     result = []
+    mq_items = get_mq_items(world)
     # Each item name is a normal widget, except for the Adult Trade items which are their own special widget
-    for item, count in item_limits.items():
+    for item in item_limits:
         if item in adult_trade or item in child_trade:
             continue
+        count = get_item_limit(item, mq_items)
         result.append(InventoryEntry(name=item, max=count, current=0))
     result.append(InventoryEntry(name='Adult Trade', max=len(adult_trade), current = 0))
     result.append(InventoryEntry(name='Child Trade', max=len(child_trade), current = 0))

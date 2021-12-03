@@ -120,65 +120,19 @@ def getFromListByName(thelist, name):
     return expectOne([x for x in thelist if x.name == name])
 
 class ExploreManager:
-    def __init__(self, world, parent):
+    def __init__(self, world, parent, please_explore, known_exits):
         self.explorations = []
-        self.widget = GuiUtils.ScrollSettingsArea(widgets = self.explorations)
+        self.widget = GuiUtils.ScrollSettingsArea(widgets=self.explorations)
         self.widget.setVisible(len(self.explorations) > 0)
-        self.world = world
         self.parent = parent
 
-        all_exits = [x for region in world.regions for x in region.exits]
-        all_destination_names = set(x.parent_region.name for x in all_exits)
+        self.set_up_world(world)
+        self.show_these(please_explore, known_exits)
 
-        est = EntranceShuffle.entrance_shuffle_table
-        overworld_to_interior_names = [x[1][0] for x in est if x[0] in ('Interior', 'SpecialInterior')]
-        interior_to_overworld_names = [x[2][0] for x in est if x[0] in ('Interior', 'SpecialInterior')]
-        self.overworld_to_interior = [getFromListByName(all_exits, name) for name in overworld_to_interior_names]
-        self.interior_to_overworld = [getFromListByName(all_exits, name) for name in interior_to_overworld_names]
-
-        overworld_to_overworld_names = [x[1][0] for x in est if x[0] == 'Overworld'] + [x[2][0] for x in est if x[0] == 'Overworld']
-        self.overworld_to_overworld = [getFromListByName(all_exits, name) for name in overworld_to_overworld_names]
-
-        overworld_to_grotto_names = [x[1][0] for x in est if x[0] in ('Grotto', 'Grave', 'SpecialGrave')]
-        self.overworld_to_grotto = [getFromListByName(all_exits, name) for name in overworld_to_grotto_names]
-        grotto_to_overworld_names = [x[2][0] for x in est if x[0] in ('Grotto', 'Grave', 'SpecialGrave')]
-        self.grotto_to_overworld = [getFromListByName(all_exits, name) for name in grotto_to_overworld_names]
-
-        overworld_to_dungeon_names = [x[1][0] for x in est if x[0] == 'Dungeon']
-        self.overworld_to_dungeon = [x for x in all_exits if x.name in overworld_to_dungeon_names]
-        self.overworld_to_dungeon = [getFromListByName(all_exits, name) for name in overworld_to_dungeon_names]
-        dungeon_to_overworld_names = [x[2][0] for x in est if x[0] == 'Dungeon']
-        self.dungeon_to_overworld = [x for x in all_exits if x.name in dungeon_to_overworld_names]
-        self.dungeon_to_overworld = [getFromListByName(all_exits, name) for name in dungeon_to_overworld_names]
-
-        owl_flight_names = [x[1][0] for x in est if x[0] == 'OwlDrop']
-        self.owl_flight = [x for x in all_exits if x.name in owl_flight_names]
-
-        spawn_warp_names = [x[1][0] for x in est if x[0] in ['WarpSong', 'Spawn']]
-        self.spawn_warp_exits = [x for x in all_exits if x.name in spawn_warp_names]
-
-        self.all_exits = [x for region in world.regions for x in region.exits]
-        self.exits_dict = {}
-        for x in self.all_exits:
-            assert x.name not in self.exits_dict
-            self.exits_dict[x.name] = x
-
-        # substitute_helper() does a lookup from exit name -> auto name
-        # save this in backwards form
-        self.backwards_substitute = {}
-        for destination in all_destination_names:
-            sub_name = self.substitute_helper(destination)
-            if sub_name == destination:
-                continue
-            if sub_name not in self.backwards_substitute:
-                self.backwards_substitute[sub_name] = []
-            self.backwards_substitute[sub_name].append(destination)
-
-    def showThese(self, please_explore, world, known_exits):
+    def show_these(self, please_explore, known_exits):
         # Sort the exit names
         please_explore = sorted(please_explore, key=str.casefold)
         known_labels = sorted([exit + " goesto " + dest for exit,dest in known_exits.items()], key=str.casefold)
-
 
         new_widgets = []
         for exit_name in please_explore:
@@ -348,3 +302,57 @@ class ExploreManager:
 
         exit.shuffled = True
         exit.connected_region = None
+
+    def set_up_world(self, world):
+        self.world = world
+
+        all_exits = [x for region in world.regions for x in region.exits]
+        all_destination_names = set(x.parent_region.name for x in all_exits)
+
+        est = EntranceShuffle.entrance_shuffle_table
+        overworld_to_interior_names = [x[1][0] for x in est if x[0] in ('Interior', 'SpecialInterior')]
+        interior_to_overworld_names = [x[2][0] for x in est if x[0] in ('Interior', 'SpecialInterior')]
+        self.overworld_to_interior = [getFromListByName(all_exits, name) for name in overworld_to_interior_names]
+        self.interior_to_overworld = [getFromListByName(all_exits, name) for name in interior_to_overworld_names]
+
+        overworld_to_overworld_names = [x[1][0] for x in est if x[0] == 'Overworld'] + [x[2][0] for x in est if x[0] == 'Overworld']
+        self.overworld_to_overworld = [getFromListByName(all_exits, name) for name in overworld_to_overworld_names]
+
+        overworld_to_grotto_names = [x[1][0] for x in est if x[0] in ('Grotto', 'Grave', 'SpecialGrave')]
+        self.overworld_to_grotto = [getFromListByName(all_exits, name) for name in overworld_to_grotto_names]
+        grotto_to_overworld_names = [x[2][0] for x in est if x[0] in ('Grotto', 'Grave', 'SpecialGrave')]
+        self.grotto_to_overworld = [getFromListByName(all_exits, name) for name in grotto_to_overworld_names]
+
+        overworld_to_dungeon_names = [x[1][0] for x in est if x[0] == 'Dungeon']
+        self.overworld_to_dungeon = [x for x in all_exits if x.name in overworld_to_dungeon_names]
+        self.overworld_to_dungeon = [getFromListByName(all_exits, name) for name in overworld_to_dungeon_names]
+        dungeon_to_overworld_names = [x[2][0] for x in est if x[0] == 'Dungeon']
+        self.dungeon_to_overworld = [x for x in all_exits if x.name in dungeon_to_overworld_names]
+        self.dungeon_to_overworld = [getFromListByName(all_exits, name) for name in dungeon_to_overworld_names]
+
+        owl_flight_names = [x[1][0] for x in est if x[0] == 'OwlDrop']
+        self.owl_flight = [x for x in all_exits if x.name in owl_flight_names]
+
+        spawn_warp_names = [x[1][0] for x in est if x[0] in ['WarpSong', 'Spawn']]
+        self.spawn_warp_exits = [x for x in all_exits if x.name in spawn_warp_names]
+
+        self.all_exits = [x for region in world.regions for x in region.exits]
+        self.exits_dict = {}
+        for x in self.all_exits:
+            assert x.name not in self.exits_dict
+            self.exits_dict[x.name] = x
+
+        # substitute_helper() does a lookup from exit name -> auto name
+        # save this in backwards form
+        self.backwards_substitute = {}
+        for destination in all_destination_names:
+            sub_name = self.substitute_helper(destination)
+            if sub_name == destination:
+                continue
+            if sub_name not in self.backwards_substitute:
+                self.backwards_substitute[sub_name] = []
+            self.backwards_substitute[sub_name].append(destination)
+
+    def update_world(self, world, please_explore, known_exits):
+        self.set_up_world(world)
+        self.show_these(please_explore, known_exits)

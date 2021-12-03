@@ -197,3 +197,12 @@ class ImageInvButton(QAbstractButton):
 
     def sizeHint(self):
         return QSize(80, 80)
+
+    def update_limit(self, limit):
+        if self.max == limit:
+            return
+        logging.info("Updating limit of {} to {}".format(self.name, limit))
+        self.max = limit
+        if self.current > self.max:
+            self.current = self.max
+        self.update()
