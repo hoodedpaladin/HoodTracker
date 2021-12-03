@@ -340,9 +340,9 @@ def getInputData(filename):
         if key not in input_data:
             input_data[key] = []
 
-    # Remove trailing whitespace and any parentheses
+    # Remove trailing whitespace
     for key in ['checked_off', 'one_wallet', 'two_wallets']:
-        input_data[key] = [re.sub("\s*(\(.*)*$", "", x) for x in input_data[key]]
+        input_data[key] = [re.sub("\s*$", "", x) for x in input_data[key]]
 
     # If any of the exits in please_explore have had their "?" replaced with a name, consider them a known_exits instead
     if 'please_explore' in input_data:
