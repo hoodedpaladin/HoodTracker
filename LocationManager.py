@@ -399,7 +399,7 @@ def getNeighborhood(region, world):
         return region_to_neighborhood[region]
     if region in redirect_region:
         return getNeighborhood(redirect_region[region], world)
-    if region in interior_regions:
+    if region in interior_regions and not getattr(world.settings, 'decouple_entrances', False):
         region_obj = world.get_region(region)
         exit_name = interior_regions[region]
         exit = expectOne([x for x in region_obj.exits if x.name == exit_name])

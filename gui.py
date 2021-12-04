@@ -101,14 +101,17 @@ class HoodTrackerGui:
             for item in self.input_data['equipment']:
                 self.invManager.collectItem(item)
         self.world.state.prog_items = self.invManager.getProgItems(world=self.world)
+        # Init ExploreManager now to use its logic for filling in known exits
+        self.exploreManager = ExploreManager.ExploreManager(self.world, parent=self, input_data=self.input_data)
 
         self.output_data = HoodTracker.solve(self.world)
 
+        # Update ExploreManager widgets with the solve data
+        self.exploreManager.show_widgets()
         self.locManager = LocationManager.LocationManager(self.world)
         self.populate_locations()
 
 
-        self.exploreManager = ExploreManager.ExploreManager(self.world, parent=self, please_explore=self.output_data['please_explore'], known_exits=self.output_known_exits)
         self.mqmanager = MQManager.MQManager(world=self.world, parent=self)
 
         self.find_path_dialog = FindPath.FindPathDialog(all_regions=[x.name for x in self.world.regions], parent=self)
@@ -120,13 +123,14 @@ class HoodTrackerGui:
 
         self.input_data['equipment'] = self.invManager.getOutputFormat()
         self.input_data['checked_off'] = self.locManager.getOutputFormat()
+        output_known_exits, output_known_exit_pairs = self.exploreManager.get_output()
         if self.save_enabled:
             HoodTracker.writeResultsToFile(world=self.world,
                                            input_data=self.input_data,
                                            output_data=self.output_data,
-                                           output_known_exits=self.output_known_exits,
+                                           output_known_exits=output_known_exits,
                                            filename=self.filename,
-                                           output_known_exit_pairs=self.output_known_exit_pairs)
+                                           output_known_exit_pairs=output_known_exit_pairs)
 
     def addKnownExit(self, exit_name, destination_name):
         self.output_known_exits[exit_name] = destination_name
@@ -154,16 +158,18 @@ class HoodTrackerGui:
     def updateLogic(self):
         # Reset inventory to the state of the invManager
         self.world.state.prog_items = self.invManager.getProgItems(world=self.world)
+        for exit in self.exploreManager.all_shuffled_exits:
+            exit.please_explore = False
         self.output_data = HoodTracker.solve(self.world)
         self.locManager.updateLocationPossible(self.output_data['possible_locations'])
         self.locManager.updateLocationsIgnored(self.world)
-        self.exploreManager.show_these(self.output_data['please_explore'], self.output_known_exits)
+        self.exploreManager.show_widgets()
 
     def launch_pathfind_dialog(self):
         self.find_path_dialog.show()
 
     def init_world(self):
-        self.world, self.output_known_exits, self.output_known_exit_pairs = HoodTracker.startWorldBasedOnData(self.input_data, gui_dialog=True)
+        self.world = HoodTracker.startWorldBasedOnData(self.input_data, gui_dialog=True)
 
     def populate_locations(self):
         for loc in self.world.get_locations():
@@ -175,10 +181,13 @@ class HoodTrackerGui:
             locationEntry = LocationManager.LocationEntry(loc_name=loc.name, possible=possible, checked=checked, parent_region=loc.parent_region.name, ignored=ignored, parent=self.locManager)
             self.locManager.insertLocation(locationEntry)
 
-    def update_world(self, world):
+    def update_world(self):
+        # Get inventory and known exits before solving the logic
         self.world.state.prog_items = self.invManager.getProgItems(world=self.world)
+        self.exploreManager.update_world(world=self.world, input_data=self.input_data)
         self.output_data = HoodTracker.solve(self.world)
-        self.locManager.update_world(world)
+        self.locManager.update_world(self.world)
+        # Update GUIs
         self.populate_locations()
         self.exploreManager.show_widgets()
         self.invManager.update_world(self.world)
@@ -188,10 +197,13 @@ class HoodTrackerGui:
         self.input_data['checked_off'] = sorted(self.locManager.getOutputFormat())
         self.input_data['dungeon_mqs'] = [name for name in dungeon_mqs if dungeon_mqs[name]]
         all_exits = [x for region in self.world.regions for x in region.exits]
-        self.input_data |= HoodTracker.exit_information_to_text(all_exits=all_exits, known_exits=self.output_known_exits, known_exit_pairs=self.output_known_exit_pairs)
+        #self.input_data |= HoodTracker.exit_information_to_text(all_exits=all_exits, known_exits=self.output_known_exits, known_exit_pairs=self.output_known_exit_pairs)
+        output_known_exits, output_known_exit_pairs = self.exploreManager.get_output()
+        self.input_data['known_exits'] = output_known_exits
+        self.input_data['paired_exits'] = output_known_exit_pairs
         # Regenerate the world again with new settings and send it to the GUI elements
         self.init_world()
-        self.update_world(self.world)
+        self.update_world()
 
 # Pyside2 will consume exceptions unless we replace sys.excepthook with this
 # Also prints exceptions to the log

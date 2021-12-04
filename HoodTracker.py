@@ -102,14 +102,14 @@ def generate(input_data, gui_dialog):
 # Try to access all exits we have not been able to access yet
 # Output a number of changes and a list of failed exits to potentially re-try again
 # Also add any reached_regions to the list and any exits that need exploring to the list
-def filterRegions(exit_queue, world, age, reached_regions, please_explore):
+def filterRegions(exit_queue, world, age, reached_regions):
     failed = []
     changes = 0
 
     for exit in exit_queue:
         if exit.shuffled:
             if exit.access_rule(world.state, spot=exit, age=age):
-                please_explore.append(exit.name)
+                exit.please_explore = True
                 changes += 1
             else:
                 failed.append(exit)
@@ -209,7 +209,6 @@ def solve(world, starting_region='Root'):
     collected_locations=[]
     queues = {'child': [exit for exit in root_region.exits],
               'adult': [exit for exit in root_region.exits]}
-    please_explore = []
 
     # Provide an implementation of world.state.search.can_reach
     world.state.search = SearchClass(world, reached_regions)
@@ -220,13 +219,13 @@ def solve(world, starting_region='Root'):
         changes = 0
 
         for age in ['adult', 'child']:
-            add_changes, queues[age] = filterRegions(queues[age], world, age, reached_regions[age], please_explore)
+            add_changes, queues[age] = filterRegions(queues[age], world, age, reached_regions[age])
             changes += add_changes
             changes += filterLocations(locked_locations, possible_locations, reached_regions[age], world.state, age, world)
 
         changes += autocollect(possible_locations, collected_locations, world.state)
 
-    return {'please_explore':list(set(please_explore)), 'possible_locations':possible_locations, 'adult_reached':reached_regions['adult'], 'child_reached':reached_regions['child']}
+    return {'possible_locations':possible_locations, 'adult_reached':reached_regions['adult'], 'child_reached':reached_regions['child']}
 
 # Mark all exits shuffled that would be shuffled according to the settings
 def shuffleExits(world):
@@ -261,6 +260,9 @@ def shuffleExits(world):
             continue
         assert len(x) >= 2
         assert len(x) <= 3
+        if len(x) == 2 and x[0] == 'Overworld' and not getattr(world.settings, 'decouple_entrances', False):
+            # The GV Lower Stream -> Lake Hylia exit isn't shuffled unless the exits are decoupled
+            continue
         shuffle_these.add(x[1][0])
         if len(x) > 2:
             shuffle_these.add(x[2][0])
@@ -270,55 +272,6 @@ def shuffleExits(world):
         if x.name in shuffle_these:
             x.shuffled = True
 
-# Fill known exits that the player has explored
-# Simple interiors/grottos/dungeons with only one connection to the overworld will be assisted
-def fillKnownExits(world, known_exits, known_exit_pairs):
-    # This will be the output data (static regions substituted for keywords)
-    # Dictionary of exit_name -> destination
-    output_known_exits = {}
-
-    # Help fill in auto_* destinations
-    helper = AutoGrotto.AutoGrotto()
-
-    all_exits = [x for region in world.regions for x in region.exits]
-
-    # List all of the simply paired connections
-    simple_pairs = {}
-    for x in EntranceShuffle.entrance_shuffle_table:
-        if x[0] not in ['Grotto', 'Grave', 'SpecialGrave', 'Interior', 'Dungeon']:
-            continue
-        simple_pairs[x[1][0]] = x[2][0]
-
-    # These are not auto-generated, so we know them for sure
-    concrete_destinations = [x[1] for x in known_exits if "auto" not in x[1]]
-    helper.removeRegions(concrete_destinations)
-
-    # Crunch the known_exits and known_exit_pairs into data
-    data = []
-    for line in known_exits:
-        exit, destination = line.split(" goesto ")
-        data.append([exit,destination])
-    for line in known_exit_pairs:
-        exit1, exit2 = line.split(" pairswith ")
-        data.append([exit1, ExploreManager.getDestinationForPairedExit(exit2)])
-        data.append([exit2, ExploreManager.getDestinationForPairedExit(exit1)])
-
-    # Fill in explored exits
-    for name, dest_name in data:
-        # Here's where we substitute a previously unused region name for the auto keyword
-        if "auto" in dest_name:
-            dest_name = helper.serveRegion(dest_name)
-
-        # Fill in the one-way information
-        exit = expectOne([x for x in all_exits if x.name == name])
-        dest_region = world.get_region(dest_name)
-        if exit.shuffled:
-            exit.connected_region = dest_region.name
-            exit.shuffled = False
-            output_known_exits[str(exit)] = str(dest_region)
-        else:
-            assert exit.connected_region == dest_region.name
-    return output_known_exits
 
 #What to display to the user as un-collected items
 total_equipment = ItemPool.item_groups['ProgressItem'] + ItemPool.item_groups['Song'] + ItemPool.item_groups['DungeonReward'] + [
@@ -408,15 +361,6 @@ class SearchClass():
                 exit_queue.extend(destination.exits)
         return False
 
-def fillKnownExitPairs(paired_exits):
-    results = {}
-
-    for line in paired_exits:
-        exit1, exit2 = line.split(" pairswith ")
-        results[exit1] = exit2
-        results[exit2] = exit1
-
-    return results
 
 def startWorldBasedOnData(input_data, gui_dialog):
     world = generate(input_data, gui_dialog=gui_dialog)
@@ -447,8 +391,6 @@ def startWorldBasedOnData(input_data, gui_dialog):
 
     # Shuffle any shuffled exits, and fill in any explored exits
     shuffleExits(world)
-    output_known_exits = fillKnownExits(world, known_exits=input_data['known_exits'], known_exit_pairs=input_data['paired_exits'])
-    output_known_exit_twins = fillKnownExitPairs(input_data['paired_exits'])
 
     # Set price rules that we have enabled
     for name in input_data['one_wallet']:
@@ -460,7 +402,7 @@ def startWorldBasedOnData(input_data, gui_dialog):
         wallet2 = world.parser.parse_rule('(Progressive_Wallet, 2)')
         loc.add_rule(wallet2)
 
-    return world, output_known_exits, output_known_exit_twins
+    return world
 
 def possibleLocToString(loc, world, child_reached, adult_reached):
     # TODO: see if using the subrules can be refined here?
@@ -502,26 +444,18 @@ def writeResultsToFile(world, input_data, output_data, output_known_exits, filen
     locs = [x for x in world.get_locations() if x.name in p]
     output_data['possible_locations'] = [possibleLocToString(x, world, output_data['child_reached'], output_data['adult_reached']) for x in locs]
 
-    # For help with exploring exits, print out all shuffled unreachable exits
-    all_exits = [x for region in world.regions for x in region.exits]
-    shuffled_exits = [x.name for x in all_exits if x.shuffled]
-    output_data['other_shuffled_exits'] = [x for x in shuffled_exits if x not in output_data['please_explore']]
-
     # Turn the known_exits data into formatted text
-    output_data = output_data | exit_information_to_text(all_exits, output_known_exits, output_known_exit_pairs)
-
-    # Format the please_explore area as "<exit> goesto ?" to make it easier on the player
-    please_explore_locs = [str(x) for x in all_exits if str(x) in output_data['please_explore']]
-    output_data['please_explore'] = [x + " goesto ?" for x in please_explore_locs]
+    #output_data = output_data | exit_information_to_text(all_exits, output_known_exits, output_known_exit_pairs)
+    # TODO: clean this up later
+    output_data['known_exits'] = output_known_exits
+    output_data['paired_exits'] = output_known_exit_pairs
 
     # Output data that we don't want
     del output_data['child_reached']
     del output_data['adult_reached']
-    if output_data['please_explore'] == []:
-        del output_data['please_explore']
 
     if priorities is None:
-        priorities = ["please_explore", "possible_locations", "known_exits", "other_shuffled_exits"]
+        priorities = ["settings_string", "possible_locations", "known_exits", "other_shuffled_exits"]
     TextSettings.writeToFile(output_data, filename, priorities)
 
 def formatPairedExits(known_exit_twins):
