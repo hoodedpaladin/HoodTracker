@@ -78,6 +78,17 @@ def determine_mq_dungeons(world, input_data):
     for name in world.dungeon_mq:
         world.dungeon_mq[name] = True if name in input_data['dungeon_mqs'] else False
 
+def determine_trials(world):
+    if not world.settings.trials_random and world.settings.trials == 0:
+        for x in world.skipped_trials:
+            world.skipped_trials[x] = True
+    elif not world.settings.trials_random and world.settings.trials == 6:
+        # All trials enabled is the default setting
+        pass
+    else:
+        # TODO: support selecting which trials are active
+        pass
+
 def generate(input_data, gui_dialog):
     settings = getSettings(input_data, gui_dialog=gui_dialog)
 
@@ -91,6 +102,7 @@ def generate(input_data, gui_dialog):
 
     for id, world in enumerate(worlds):
         determine_mq_dungeons(world, input_data)
+        determine_trials(world)
 
         if settings.logic_rules == 'glitched':
             overworld_data = os.path.join(data_path('Glitched World'), 'Overworld.json')
