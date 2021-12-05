@@ -29,6 +29,17 @@ import gui
 import ExploreManager
 import LocationLogic
 
+class BadSettingsStringException(Exception):
+    pass
+
+def validate_settings_string(settings_string):
+    s = Settings({})
+    try:
+        s.update_with_settings_string(settings_string)
+    except Exception:
+        return False
+    return True
+
 def getSettings(input_data, gui_dialog=None):
     parser = argparse.ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
 
@@ -49,7 +60,10 @@ def getSettings(input_data, gui_dialog=None):
         raise Exception("Please provide settings_string as an argument or in the text file")
 
     assert settings_string
-    settings.update_with_settings_string(settings_string)
+    try:
+        settings.update_with_settings_string(settings_string)
+    except Exception:
+        raise BadSettingsStringException("{} is not a valid settings string".format(settings_string))
     return settings
 
 def determine_mq_dungeons(world, input_data):
@@ -227,8 +241,7 @@ def solve(world, starting_region='Root'):
 
     return {'possible_locations':possible_locations, 'adult_reached':reached_regions['adult'], 'child_reached':reached_regions['child']}
 
-# Mark all exits shuffled that would be shuffled according to the settings
-def shuffleExits(world):
+def get_shuffled_exits(settings):
     settings_to_types_dict = {
         'shuffle_dungeon_entrances': ['Dungeon'],
         'shuffle_grotto_entrances': ['Grotto', 'Grave'],
@@ -240,7 +253,7 @@ def shuffleExits(world):
     shuffled_types = []
 
     for setting, types in settings_to_types_dict.items():
-        if getattr(world.settings, setting):
+        if getattr(settings, setting):
             shuffled_types.extend(types)
 
     interior_options_dict = {
@@ -248,7 +261,7 @@ def shuffleExits(world):
         'simple': ['Interior'],
         'all': ['Interior', 'SpecialInterior'],
     }
-    shuffled_types.extend(interior_options_dict[world.settings.shuffle_interior_entrances])
+    shuffled_types.extend(interior_options_dict[settings.shuffle_interior_entrances])
 
     # Complex exceptions
     if 'Grave' in shuffled_types and 'SpecialInterior' in shuffled_types:
@@ -260,18 +273,22 @@ def shuffleExits(world):
             continue
         assert len(x) >= 2
         assert len(x) <= 3
-        if len(x) == 2 and x[0] == 'Overworld' and not getattr(world.settings, 'decouple_entrances', False):
+        if len(x) == 2 and x[0] == 'Overworld' and not getattr(settings, 'decouple_entrances', False):
             # The GV Lower Stream -> Lake Hylia exit isn't shuffled unless the exits are decoupled
             continue
         shuffle_these.add(x[1][0])
         if len(x) > 2:
             shuffle_these.add(x[2][0])
 
+    return shuffle_these
+
+# Mark all exits shuffled that would be shuffled according to the settings
+def shuffleExits(world):
+    shuffle_these = get_shuffled_exits(world.settings)
     all_exits = [x for region in world.regions for x in region.exits]
     for x in all_exits:
         if x.name in shuffle_these:
             x.shuffled = True
-
 
 #What to display to the user as un-collected items
 total_equipment = ItemPool.item_groups['ProgressItem'] + ItemPool.item_groups['Song'] + ItemPool.item_groups['DungeonReward'] + [

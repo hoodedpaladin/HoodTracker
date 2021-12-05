@@ -49,10 +49,17 @@ class DisplayWindow(QtWidgets.QMainWindow):
         fullcanvas = QtWidgets.QWidget()
         fullcanvas.setLayout(mqsplit)
         self.setCentralWidget(fullcanvas)
+        self.fullcanvas_widget = fullcanvas
 
+        actions = []
         self.find_path_action = QtWidgets.QAction("&Find Path", self)
         self.find_path_action.setShortcut('Ctrl+F')
-        self.menuBar().addAction(self.find_path_action)
+        actions.append(self.find_path_action)
+        self.change_settings_action = QtWidgets.QAction("Change &Settings String", self)
+        self.change_settings_action.setShortcut('Ctrl+S')
+        actions.append(self.change_settings_action)
+        for action in actions:
+            self.menuBar().addAction(action)
 
     def closeEvent(self, event:QtGui.QCloseEvent):
         self.find_path_dialog.close()
@@ -116,7 +123,9 @@ class HoodTrackerGui:
 
         self.find_path_dialog = FindPath.FindPathDialog(all_regions=[x.name for x in self.world.regions], parent=self)
         window = DisplayWindow(invManager=self.invManager, exploreManager=self.exploreManager, locManager=self.locManager, world=self.world, find_path_dialog=self.find_path_dialog, mqmanager=self.mqmanager)
+        self.window = window
         window.find_path_action.triggered.connect(self.launch_pathfind_dialog)
+        window.change_settings_action.triggered.connect(self.launch_settingsstring_dialog)
         window.show()
 
         self.app.exec_()
@@ -171,6 +180,7 @@ class HoodTrackerGui:
     def init_world(self):
         self.world = HoodTracker.startWorldBasedOnData(self.input_data, gui_dialog=True)
 
+    # Fill the LocationManager gui with the current set and state of locations
     def populate_locations(self):
         for loc in self.world.get_locations():
             if not doWeWantThisLoc(loc, self.world):
@@ -181,6 +191,7 @@ class HoodTrackerGui:
             locationEntry = LocationManager.LocationEntry(loc_name=loc.name, possible=possible, checked=checked, parent_region=loc.parent_region.name, ignored=ignored, parent=self.locManager)
             self.locManager.insertLocation(locationEntry)
 
+    # Refresh all gui managers with the new self.world
     def update_world(self):
         # Get inventory and known exits before solving the logic
         self.world.state.prog_items = self.invManager.getProgItems(world=self.world)
@@ -192,18 +203,59 @@ class HoodTrackerGui:
         self.exploreManager.show_widgets()
         self.invManager.update_world(self.world)
 
-    def update_mqs(self, dungeon_mqs):
-        # Route the "output" information to the input again so it isn't lost
+    # Save the current state of the world / gui managers into input_data
+    def save_current_data_to_input_data(self):
         self.input_data['checked_off'] = sorted(self.locManager.getOutputFormat())
-        self.input_data['dungeon_mqs'] = [name for name in dungeon_mqs if dungeon_mqs[name]]
-        all_exits = [x for region in self.world.regions for x in region.exits]
-        #self.input_data |= HoodTracker.exit_information_to_text(all_exits=all_exits, known_exits=self.output_known_exits, known_exit_pairs=self.output_known_exit_pairs)
+        self.input_data['dungeon_mqs'] = [name for name in self.world.dungeon_mq if self.world.dungeon_mq[name]]
         output_known_exits, output_known_exit_pairs = self.exploreManager.get_output()
         self.input_data['known_exits'] = output_known_exits
         self.input_data['paired_exits'] = output_known_exit_pairs
+
+    def update_mqs(self, dungeon_mqs):
+        # Route the "output" information to the input again so it isn't lost
+        self.save_current_data_to_input_data()
+        # Apply changes to the input data
+        self.input_data['dungeon_mqs'] = [name for name in dungeon_mqs if dungeon_mqs[name]]
         # Regenerate the world again with new settings and send it to the GUI elements
         self.init_world()
         self.update_world()
+
+    def update_settings_string(self, new_settings_string):
+        self.save_current_data_to_input_data()
+        old_settings_string = self.world.settings.settings_string
+        # Regenerate the world again with new settings and send it to the GUI elements
+        self.input_data['settings_string'] = [new_settings_string]
+        try:
+            self.init_world()
+        except HoodTracker.BadSettingsStringException as e:
+            logging.error("Invalid settings string: {}".format(e))
+            self.input_data['settings_string'] = [old_settings_string]
+            self.init_world()
+        self.update_world()
+
+    def launch_settingsstring_dialog(self):
+        old_settings_string = self.world.settings.settings_string
+        new_string, ok = QtWidgets.QInputDialog.getText(self.window.fullcanvas_widget,
+                                                        "Change Settings String",
+                                                        "Enter new settings string:\n{}".format(old_settings_string),
+                                                        QtWidgets.QLineEdit.Normal,
+                                                        old_settings_string)
+        if not ok:
+            return
+        # Attempt to quit early if the settings string is invalid
+        if not HoodTracker.validate_settings_string(new_string):
+            logging.error("Invalid settings string: " + new_string)
+            show_warning_popup("Invalid settings string: " + new_string)
+            return
+        logging.info("Updating settings string to " + new_string)
+        self.update_settings_string(new_string)
+
+def show_warning_popup(message):
+    msgBox = QtWidgets.QMessageBox()
+    msgBox.setIcon(QtWidgets.QMessageBox.Information)
+    msgBox.setWindowTitle("Error")
+    msgBox.setText(message)
+    msgBox.exec()
 
 # Pyside2 will consume exceptions unless we replace sys.excepthook with this
 # Also prints exceptions to the log

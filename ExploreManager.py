@@ -2,6 +2,7 @@ import GuiUtils
 import PySide2.QtWidgets as QtWidgets
 import PySide2.QtCore as QtCore
 import PySide2.QtGui as QtGui
+import HoodTracker
 from CommonUtils import *
 import EntranceShuffle
 import AutoGrotto
@@ -350,6 +351,11 @@ class ExploreManager:
         self.consumed_flag_dirty = False
 
     def input_saved_data(self, input_data):
+        # Get the shuffled exits according to the world settings
+        # so that we can ignore/discard anything that isn't shuffled
+        shuffled_exits = HoodTracker.get_shuffled_exits(self.world.settings)
+        discard = []
+
         for line in input_data['known_exits']:
             match = re.match("(.+) goesto (.+) \(Consumes (.+)\)", line)
             if match:
@@ -360,16 +366,30 @@ class ExploreManager:
                 assert match
                 exit, destination_region = match.groups()
                 consumed_exit = None
+            if exit not in shuffled_exits:
+                # A shuffled exit is not un-shuffled due to settings change
+                discard.append(line)
+                continue
             exit = self.exits_dict[exit]
-            self.makeConnection(exit, destination_region, consumed_exit=consumed_exit)
+            self.makeConnection(exit, destination_region, consumed_exit=consumed_exit, redundant_okay=True)
+        for line in discard:
+            input_data['known_exits'].remove(line)
 
+        discard = []
         for line in input_data['paired_exits']:
             match = re.match("(.*) pairswith (.*)", line)
             assert match
             exit1, exit2 = match.groups()
+            if not exit1 in shuffled_exits:
+                # A shuffled exit is not un-shuffled due to settings change
+                assert exit2 not in shuffled_exits
+                discard.append(line)
+                continue
             exit1 = self.exits_dict[exit1]
             exit2 = self.exits_dict[exit2]
             self.makeCoupledConnection(exit1, exit2)
+        for line in discard:
+            input_data['paired_exits'].remove(line)
 
     def get_output(self):
         output_known_exits = []
