@@ -66,6 +66,8 @@ class DisplayWindow(QtWidgets.QMainWindow):
 
 def doWeWantThisLoc(loc, world):
     # Events / drops / gossipstones / fixed locations are auto-collected
+    if loc.name == 'Ganon':
+        return True
     if loc.type in ('Event', 'HintStone', 'Drop'):
         return False
     if loc.name in ItemPool.fixedlocations:

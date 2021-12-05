@@ -192,6 +192,8 @@ def autocollect(possible_locations, collected_locations, state):
 
     for loc in possible_locations:
         if loc.name in ItemPool.fixedlocations:
+            if loc.name == 'Ganon':
+                continue
             collect_items.append(ItemPool.fixedlocations[loc.name])
             move_locs.append(loc)
             continue
