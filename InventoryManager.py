@@ -4,6 +4,7 @@ import GuiUtils
 from CommonUtils import *
 from ImageInvButton import ImageInvButton
 from itertools import chain
+import ItemList
 
 total_equipment = ItemPool.item_groups['ProgressItem'] + ItemPool.item_groups['Song'] + ItemPool.item_groups['DungeonReward'] + [
     'Deku Stick Capacity',
@@ -240,17 +241,6 @@ class InventoryManager:
             # Fixes for buyable + replaceable items
             if x.name in self.item_aliases:
                 results[self.item_aliases[x.name]] += x.current
-
-        # Hardcoded items
-        if world.settings.free_scarecrow:
-            results['Scarecrow Song'] += 1
-        if world.settings.no_epona_race:
-            results['Epona'] += 1
-        if not world.keysanity and not world.dungeon_mq['Fire Temple']:
-            results['Small Key (Fire Temple)'] += 1
-        if world.settings.shuffle_smallkeys == 'vanilla' and world.dungeon_mq['Spirit Temple']:
-            results['Small Key (Spirit Temple)'] += 3
-
         return results
 
     def update(self, child_item):
@@ -280,6 +270,16 @@ class InventoryManager:
             widget = self.widgets_dict[key_name]
             amount = get_item_limit(key_name, mq_items)
             widget.update_limit(amount)
+            if world.settings.shuffle_smallkeys in ['remove']:
+                widget.current = amount
+                widget.update()
+
+        if world.settings.shuffle_bosskeys in ['remove']:
+            key_names = [x for x,y in ItemList.item_table.items() if 'BossKey' in y[0] and x != 'Boss Key']
+            for key_name in key_names:
+                widget = self.widgets_dict[key_name]
+                widget.current = 1
+                widget.update()
 
 # Determine which small key counts are vanilla or MQ
 # Returns an empty list for vanilla
@@ -299,6 +299,15 @@ def get_item_limit(item_name, mq_items):
     else:
         return item_limits[item_name]
 
+def get_small_key_limits(world):
+    mq_items = get_mq_items(world)
+    results = dict()
+    for item in gui_positions:
+        if 'Small Key' not in item:
+            continue
+        results[item] = get_item_limit(item, mq_items)
+    return results
+
 def makeInventory(max_starting=False, world=None):
     global item_limits
 
@@ -317,3 +326,14 @@ def makeInventory(max_starting=False, world=None):
         for x in result:
             x.current = x.max
     return result
+
+def add_free_items(world, prog_items):
+    # Hardcoded items
+    if world.settings.free_scarecrow:
+        prog_items['Scarecrow Song'] += 1
+    if world.settings.no_epona_race:
+        prog_items['Epona'] += 1
+    if not world.keysanity and not world.dungeon_mq['Fire Temple']:
+        prog_items['Small Key (Fire Temple)'] += 1
+    if world.settings.shuffle_smallkeys == 'vanilla' and world.dungeon_mq['Spirit Temple']:
+        prog_items['Small Key (Spirit Temple)'] += 3

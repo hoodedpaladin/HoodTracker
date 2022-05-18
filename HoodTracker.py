@@ -28,6 +28,7 @@ from Region import TimeOfDay
 import gui
 import ExploreManager
 import LocationLogic
+import InventoryManager
 
 class BadSettingsStringException(Exception):
     pass
@@ -128,13 +129,13 @@ def generate(input_data, gui_dialog):
 # Try to access all exits we have not been able to access yet
 # Output a number of changes and a list of failed exits to potentially re-try again
 # Also add any reached_regions to the list and any exits that need exploring to the list
-def filterRegions(exit_queue, world, age, reached_regions):
+def filterRegions(exit_queue, world, age, reached_regions, please_explore=True):
     failed = []
     changes = 0
 
     for exit in exit_queue:
         if exit.shuffled:
-            if exit.access_rule(world.state, spot=exit, age=age):
+            if please_explore and exit.access_rule(world.state, spot=exit, age=age):
                 exit.please_explore = True
                 changes += 1
             else:
@@ -227,7 +228,7 @@ def autocollect(possible_locations, collected_locations, state):
 
     return len(move_locs)
 
-def solve(world, starting_region='Root'):
+def solve(world, prog_items, starting_region='Root'):
     root_region = world.get_region(starting_region)
     reached_regions = {'child': {root_region:TimeOfDay.NONE},
                        'adult': {root_region:TimeOfDay.NONE}}
@@ -235,11 +236,15 @@ def solve(world, starting_region='Root'):
     locked_locations=all_locations[:]
     possible_locations=[]
     collected_locations=[]
+    allkeys_possible_locations = []
     queues = {'child': [exit for exit in root_region.exits],
               'adult': [exit for exit in root_region.exits]}
 
     # Provide an implementation of world.state.search.can_reach
     world.state.search = SearchClass(world, reached_regions)
+
+    world.state.prog_items = prog_items.copy()
+    InventoryManager.add_free_items(world, world.state.prog_items)
 
     # Map traversal
     changes = 1
@@ -247,13 +252,36 @@ def solve(world, starting_region='Root'):
         changes = 0
 
         for age in ['adult', 'child']:
-            add_changes, queues[age] = filterRegions(queues[age], world, age, reached_regions[age])
+            add_changes, queues[age] = filterRegions(queues[age], world, age, reached_regions[age], please_explore=True)
             changes += add_changes
             changes += filterLocations(locked_locations, possible_locations, reached_regions[age], world.state, age, world)
 
         changes += autocollect(possible_locations, collected_locations, world.state)
 
-    return {'possible_locations':possible_locations, 'adult_reached':reached_regions['adult'], 'child_reached':reached_regions['child']}
+    if world.settings.shuffle_smallkeys in ['vanilla', 'dungeon']:
+        # Give max small keys and try again, to see which locations are "ignore small key logic" possible
+        allkeys_possible_locations = possible_locations.copy()
+        allkeys_reached_regions = { 'child':reached_regions['child'].copy(),
+                                    'adult':reached_regions['adult'].copy()}
+        key_amounts = InventoryManager.get_small_key_limits(world)
+        # Free keys are given to fix the logic sometimes. So instead of comparing the current prog items,
+        # Compare the base prog items amount with expected
+        for key, amount in key_amounts.items():
+            difference = amount - prog_items[key]
+            if difference > 0:
+                world.state.prog_items[key] += difference
+        changes = 1
+        while changes:
+            changes = 0
+
+            for age in ['adult', 'child']:
+                add_changes, queues[age] = filterRegions(queues[age], world, age, allkeys_reached_regions[age], please_explore=False)
+                changes += add_changes
+                changes += filterLocations(locked_locations, allkeys_possible_locations, allkeys_reached_regions[age], world.state, age, world)
+
+            changes += autocollect(allkeys_possible_locations, collected_locations, world.state)
+
+    return {'possible_locations':possible_locations, 'adult_reached':reached_regions['adult'], 'child_reached':reached_regions['child'], 'allkeys_possible_locations':allkeys_possible_locations}
 
 def get_shuffled_exits(settings):
     settings_to_types_dict = {
@@ -391,7 +419,6 @@ class SearchClass():
                     return True
                 exit_queue.extend(destination.exits)
         return False
-
 
 def startWorldBasedOnData(input_data, gui_dialog):
     world = generate(input_data, gui_dialog=gui_dialog)

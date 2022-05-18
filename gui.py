@@ -1,4 +1,5 @@
 import logging
+from collections import Counter
 
 try:
     import PySide2.QtWidgets as QtWidgets
@@ -107,17 +108,22 @@ class HoodTrackerGui:
         inv_list = InventoryManager.makeInventory(max_starting=self.override_inventory, world=self.world)
         self.invManager = InventoryManager.InventoryManager(inventory=inv_list, parent=self)
         if not self.override_inventory:
+            equipment_items = Counter()
             for item in self.input_data['equipment']:
-                self.invManager.collectItem(item)
-        self.world.state.prog_items = self.invManager.getProgItems(world=self.world)
+                equipment_items[item] += 1
+            for item, count in equipment_items.items():
+                self.invManager.collectItem(item, count=count)
+        self.invManager.update_world(self.world)
+        prog_items = self.invManager.getProgItems(world=self.world)
+
         # Init ExploreManager now to use its logic for filling in known exits
         self.exploreManager = ExploreManager.ExploreManager(self.world, parent=self, input_data=self.input_data)
 
-        self.output_data = HoodTracker.solve(self.world)
+        self.output_data = HoodTracker.solve(self.world, prog_items=prog_items)
 
         # Update ExploreManager widgets with the solve data
         self.exploreManager.show_widgets()
-        self.locManager = LocationManager.LocationManager(self.world)
+        self.locManager = LocationManager.LocationManager(self.world, parent_gui=self)
         self.populate_locations()
 
 
@@ -168,11 +174,11 @@ class HoodTrackerGui:
 
     def updateLogic(self):
         # Reset inventory to the state of the invManager
-        self.world.state.prog_items = self.invManager.getProgItems(world=self.world)
+        prog_items = self.invManager.getProgItems(world=self.world)
         for exit in self.exploreManager.all_shuffled_exits:
             exit.please_explore = False
-        self.output_data = HoodTracker.solve(self.world)
-        self.locManager.updateLocationPossible(self.output_data['possible_locations'])
+        self.output_data = HoodTracker.solve(self.world, prog_items=prog_items)
+        self.locManager.updateLocationPossible(self.output_data['possible_locations'], self.output_data['allkeys_possible_locations'])
         self.locManager.updateLocationsIgnored(self.world)
         self.exploreManager.show_widgets()
 
@@ -188,9 +194,11 @@ class HoodTrackerGui:
             if not doWeWantThisLoc(loc, self.world):
                 continue
             possible = loc in self.output_data['possible_locations']
+            if not possible and loc in self.output_data['allkeys_possible_locations']:
+                possible = 2
             checked = loc.name in self.input_data['checked_off']
             ignored = LocationManager.locationIsIgnored(self.world, loc)
-            locationEntry = LocationManager.LocationEntry(loc_name=loc.name, possible=possible, checked=checked, parent_region=loc.parent_region.name, ignored=ignored, parent=self.locManager)
+            locationEntry = LocationManager.LocationEntry(loc_name=loc.name, type=loc.type, possible=possible, checked=checked, parent_region=loc.parent_region.name, ignored=ignored, parent=self.locManager)
             self.locManager.insertLocation(locationEntry)
 
     # Refresh all gui managers with the new self.world
@@ -198,7 +206,7 @@ class HoodTrackerGui:
         # Get inventory and known exits before solving the logic
         self.world.state.prog_items = self.invManager.getProgItems(world=self.world)
         self.exploreManager.update_world(world=self.world, input_data=self.input_data)
-        self.output_data = HoodTracker.solve(self.world)
+        self.output_data = HoodTracker.solve(self.world, prog_items=self.world.state.prog_items)
         self.locManager.update_world(self.world)
         # Update GUIs
         self.populate_locations()
@@ -233,6 +241,22 @@ class HoodTrackerGui:
             logging.error("Invalid settings string: {}".format(e))
             self.input_data['settings_string'] = [old_settings_string]
             self.init_world()
+        self.update_world()
+
+    def updateLocationWallets(self, locname, numwallets):
+        # Route the "output" information to the input again so it isn't lost
+        self.save_current_data_to_input_data()
+
+        # Add to wallet list it should be in, and remove from any wallet lists it shouldn't be in
+        wallet_lists = { 1: self.input_data['one_wallet'], 2: self.input_data['two_wallets']}
+        for num,walletlist in wallet_lists.items():
+            while locname in walletlist:
+                walletlist.remove(locname)
+            if numwallets == num:
+                walletlist.append(locname)
+
+        # Regenerate the world again with new settings and send it to the GUI elements
+        self.init_world()
         self.update_world()
 
     def launch_settingsstring_dialog(self):

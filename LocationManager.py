@@ -7,11 +7,12 @@ from CommonUtils import *
 import logging
 
 class LocationManager:
-    def __init__(self, world):
+    def __init__(self, world, parent_gui):
         self.world = world
         self.widget = QTreeView()
         self.widget = self.widget
         self.widget.setHeaderHidden(True)
+        self.parent_gui = parent_gui
 
         self.model = QStandardItemModel()
         rootNode = self.model.invisibleRootItem()
@@ -32,6 +33,8 @@ class LocationManager:
         self.expandThisItem(self._unchecked)
 
         self.model.itemChanged.connect(lambda x: x.processCheck())
+        self.widget.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.widget.customContextMenuRequested.connect(self.openMenu)
 
     def insertLocation(self, location, first=False):
         # Make sure it's in the set
@@ -54,10 +57,13 @@ class LocationManager:
 
         destination.addLoc(location)
 
-    def updateLocationPossible(self, possible_locations):
+    def updateLocationPossible(self, possible_locations, allkeys_possible_locations):
         possible_names = set(x.name for x in possible_locations)
+        allkeys_names = set(x.name for x in allkeys_possible_locations)
         for x in self.allLocations:
             possible = x.loc_name in possible_names
+            if not possible and x.loc_name in allkeys_names:
+                possible = 2
             x.setPossible(possible)
 
     def updateLocationsIgnored(self, world):
@@ -84,6 +90,16 @@ class LocationManager:
     def update_world(self, world):
         self.world = world
         self.clear_locations()
+
+    def openMenu(self, position):
+        indexes = self.widget.selectedIndexes()
+        assert len(indexes) == 1
+        index = indexes[0]
+        data = index.data(role=Qt.UserRole)
+        if not data:
+            return
+        data.openMenu(parent=self, position=position)
+
 
 
 def itemMaxed(world, itemname):
@@ -235,7 +251,7 @@ class NeighborhoodCategory(QStandardItem):
 
 
 class LocationEntry(QStandardItem):
-    def __init__(self, loc_name, possible, parent_region, checked=False, ignored=False, parent=None):
+    def __init__(self, loc_name, type, possible, parent_region, checked=False, ignored=False, parent=None):
         super().__init__()
 
         self.setEditable(False)
@@ -243,6 +259,7 @@ class LocationEntry(QStandardItem):
         self.setFont(QFont('Open Sans', 10))
 
         self.loc_name = loc_name
+        self.type = type
         self.setCheckable(True)
         self._parent = parent
         self.currently_checked = checked
@@ -260,6 +277,8 @@ class LocationEntry(QStandardItem):
             self.known_item = loc.item.name
 
         self.updateText()
+        if self.type == 'Shop':
+            self.setData(self, role=Qt.UserRole)
 
     def isChecked(self):
         return self.checkState() == Qt.CheckState.Checked
@@ -278,8 +297,10 @@ class LocationEntry(QStandardItem):
     def setPossible(self, possible):
         if possible == self.possible:
             return
-        if possible:
-            color = QColor(0,0,0)
+        if possible == 2:
+            color = QColor(20, 20, 255)
+        elif possible:
+                color = QColor(0,0,0)
         else:
             color = QColor(255,0,0)
         self.setForeground(color)
@@ -294,7 +315,10 @@ class LocationEntry(QStandardItem):
         self._parent.insertLocation(self)
 
     def updateText(self):
-        if self.possible:
+        if self.possible == 2:
+            color = QColor(20, 20, 255)
+            self.neighborhood = getNeighborhood(self.parent_region, self._parent.world)
+        elif self.possible:
             color = QColor(0,0,0)
             self.neighborhood = getNeighborhood(self.parent_region, self._parent.world)
         else:
@@ -323,6 +347,22 @@ class LocationEntry(QStandardItem):
                 return True
         return False
 
+    def openMenu(self, parent, position):
+        if self.type == 'Shop':
+            menu = QMenu(parent.widget)
+            entries = []
+            entries.append(menu.addAction("0-99 Rupees"))
+            entries.append(menu.addAction("100-200 Rupees"))
+            entries.append(menu.addAction("201-500 Rupees"))
+            chosen_action = menu.exec_(parent.widget.mapToGlobal(position))
+            if chosen_action is None:
+                return
+            chosen = entries.index(chosen_action)
+            logging.info("User has indicated that {} needs {} wallets".format(self.loc_name, chosen))
+            parent.parent_gui.updateLocationWallets(self.loc_name, chosen)
+            return
+        else:
+            raise Exception("Unknown location type for context menu")
 
 def originOfExit(exit_name):
     match = re.fullmatch("(.*) -> (.*)", exit_name)
