@@ -156,6 +156,14 @@ def filterRegions(exit_queue, world, age, reached_regions, please_explore=True):
 
 item_events = {
     'Stop GC Rolling Goron as Adult from Goron City': 'Stop GC Rolling Goron as Adult',
+    'Odd Mushroom Access from Lost Woods' : 'Odd Mushroom Access',
+    'Poachers Saw Access from Lost Woods' : 'Poachers Saw Access',
+    'Eyedrops Access from LH Lab' : 'Eyedrops Access',
+    'Broken Sword Access from GV Fortress Side' : 'Broken Sword Access',
+    'Cojiro Access from Kakariko Village' : 'Cojiro Access',
+    'Odd Potion Access from Kak Odd Medicine Building' : 'Odd Potion Access',
+    'Prescription Access from Death Mountain Summit' : 'Prescription Access',
+    'Eyeball Frog Access from Zoras Domain' : 'Eyeball Frog Access',
 }
 
 def doWeWantThisLoc(loc, world):
@@ -205,8 +213,6 @@ def autocollect(possible_locations, collected_locations, state):
 
     for loc in possible_locations:
         if loc.name in ItemPool.fixedlocations:
-            if loc.name == 'Ganon':
-                continue
             collect_items.append(ItemPool.fixedlocations[loc.name])
             move_locs.append(loc)
             continue
