@@ -38,12 +38,13 @@ def isProgressionShopItem(world, loc, itemname):
 
 
 def populateVanillaShop(world):
-    shopitems = ItemPool.vanilla_shop_items
-    locs = [x for x in world.get_locations() if x.name in shopitems]
+    locs = [x for x in world.get_locations() if x.type == 'Shop']
     progression_locs = []
 
     for loc in locs:
-        itemname = shopitems[loc.name]
+        itemname = loc.vanilla_item
+        if world.settings.bombchus_in_logic and loc.name in ['KF Shop Item 8', 'Market Bazaar Item 4', 'Kak Bazaar Item 4']:
+            itemname = 'Buy Bombchu (5)'
 
         if not isProgressionShopItem(world, loc, itemname):
             loc.shop_non_progression = True

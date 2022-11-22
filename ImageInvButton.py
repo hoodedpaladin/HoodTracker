@@ -15,6 +15,7 @@ imageNamesDict = {
     'Small Key (Spirit Temple)': 'OoT_Small_Key_Icon.png',
     'Small Key (Water Temple)': 'OoT_Small_Key_Icon.png',
     'Small Key (Gerudo Fortress)': 'OoT_Small_Key_Icon.png',
+    'Small Key (Thieves Hideout)': 'OoT_Small_Key_Icon.png',
     'Kokiri Sword': 'OoT_Kokiri_Sword_Icon.png',
     'Progressive Hookshot': ['OoT_Hookshot_Icon.png', 'OoT_Longshot_Icon.png'],
     'Boss Key (Fire Temple)': 'OoT_Boss_Key_Icon.png',
@@ -83,8 +84,9 @@ imageNamesDict = {
     'Blue Fire': 'OoT_Blue_Fire_Icon.png',
     'Gold Skulltula Token': 'OoT_Token_Icon.png',
     'Deku Nut': 'OoT_Deku_Nut_Icon.png',
-    'Adult Trade': ['OoT_Weird_Egg_Icon.png', 'OoT_Cojiro_Icon.png', 'OoT_Odd_Mushroom_Icon.png', 'OoT_Odd_Potion_Icon.png', 'OoT_Poachers_Saw_Icon.png', 'OoT_Broken_Giants_Knife_Icon.png', 'OoT_Prescription_Icon.png', 'OoT_Eyeball_Frog_Icon.png', 'OoT_Claim_Check_Icon.png'],
-    'Child Trade': ['OoT_Weird_Egg_Icon.png', 'OoT_Zeldas_Letter_Icon.png']
+    'Adult Trade': ['OoT_Weird_Egg_Icon.png', 'OoT_Cojiro_Icon.png', 'OoT_Odd_Mushroom_Icon.png', 'OoT_Odd_Potion_Icon.png', 'OoT_Poachers_Saw_Icon.png', 'OoT_Broken_Giants_Knife_Icon.png', 'OoT_Prescription_Icon.png', 'OoT_Eyeball_Frog_Icon.png', "World's_Finest_Eye_Drops_-_OOT64_icon.png", 'OoT_Claim_Check_Icon.png'],
+    'Child Trade': ['OoT_Weird_Egg_Icon.png', 'Pocket_Cucco_-_OOT64_icon.png', 'OoT_Zeldas_Letter_Icon.png'],
+    'Ice Arrows': 'Ice_Arrow_-_OOT64_icon.png',
 }
 
 helperTextDict = {
@@ -97,6 +99,7 @@ helperTextDict = {
     'Small Key (Spirit Temple)': 'Spirit',
     'Small Key (Water Temple)': 'Water',
     'Small Key (Gerudo Fortress)': 'GF',
+    'Small Key (Thieves Hideout)': 'TH',
     'Boss Key (Fire Temple)': 'Fire',
     'Boss Key (Shadow Temple)': 'Shadow',
     'Boss Key (Spirit Temple)': 'Spirit',

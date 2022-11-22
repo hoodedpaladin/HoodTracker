@@ -436,10 +436,15 @@ class ExploreManager:
         grotto_to_overworld_names = [x[2][0] for x in est if x[0] in ('Grotto', 'Grave', 'SpecialGrave')]
         self.grotto_to_overworld = [getFromListByName(all_exits, name) for name in grotto_to_overworld_names]
 
-        overworld_to_dungeon_names = [x[1][0] for x in est if x[0] == 'Dungeon']
+        overworld_to_dungeon_names = [x[1][0] for x in est if x[0] in ['Dungeon', 'DungeonSpecial']]
         self.overworld_to_dungeon = [getFromListByName(all_exits, name) for name in overworld_to_dungeon_names]
-        dungeon_to_overworld_names = [x[2][0] for x in est if x[0] == 'Dungeon']
+        dungeon_to_overworld_names = [x[2][0] for x in est if x[0] in ['Dungeon', 'DungeonSpecial']]
         self.dungeon_to_overworld = [getFromListByName(all_exits, name) for name in dungeon_to_overworld_names]
+
+        boss_door_to_room_names = [x[1][0] for x in est if x[0] in ['ChildBoss', 'AdultBoss']]
+        self.boss_door_to_room = [getFromListByName(all_exits, name) for name in boss_door_to_room_names]
+        boss_room_to_door_names = [x[2][0] for x in est if x[0] in ['ChildBoss', 'AdultBoss']]
+        self.boss_room_to_door = [getFromListByName(all_exits, name) for name in boss_room_to_door_names]
 
         owl_flight_names = [x[1][0] for x in est if x[0] == 'OwlDrop']
         self.owl_flight = [x for x in all_exits if x.name in owl_flight_names]
@@ -447,7 +452,7 @@ class ExploreManager:
         spawn_warp_names = [x[1][0] for x in est if x[0] in ['WarpSong', 'Spawn']]
         self.spawn_warp_exits = [x for x in all_exits if x.name in spawn_warp_names]
 
-        self.all_shuffled_exits = self.overworld_to_interior + self.interior_to_overworld + self.overworld_to_overworld + self.overworld_to_grotto + self.grotto_to_overworld + self.overworld_to_dungeon + self.dungeon_to_overworld + self.owl_flight + self.spawn_warp_exits
+        self.all_shuffled_exits = self.overworld_to_interior + self.interior_to_overworld + self.overworld_to_overworld + self.overworld_to_grotto + self.grotto_to_overworld + self.overworld_to_dungeon + self.dungeon_to_overworld + self.owl_flight + self.spawn_warp_exits + self.boss_door_to_room + self.boss_room_to_door
         self.nonwarp_shuffled_exits = self.overworld_to_interior + self.interior_to_overworld + self.overworld_to_overworld + self.overworld_to_grotto + self.grotto_to_overworld + self.overworld_to_dungeon + self.dungeon_to_overworld
         self.type_lists = [self.overworld_to_overworld,
                            self.overworld_to_grotto,
@@ -455,7 +460,8 @@ class ExploreManager:
                            self.overworld_to_dungeon,
                            self.dungeon_to_overworld,
                            self.overworld_to_interior,
-                           self.interior_to_overworld]
+                           self.interior_to_overworld,
+                           self.boss_door_to_room,]
 
         self.all_exits = [x for region in world.regions for x in region.exits]
         self.exits_dict = {}

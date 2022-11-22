@@ -71,7 +71,7 @@ def doWeWantThisLoc(loc, world):
         return True
     if loc.type in ('Event', 'HintStone', 'Drop'):
         return False
-    if loc.name in ItemPool.fixedlocations:
+    if loc.locked:
         return False
     # We do not need non-progression deku scrubs unless scrubsanity or grotto shuffle is on
     if world.settings.shuffle_scrubs == 'off' and not world.settings.shuffle_grotto_entrances:
@@ -105,7 +105,7 @@ class HoodTrackerGui:
         self.init_world()
 
     def run(self):
-        inv_list = InventoryManager.makeInventory(max_starting=self.override_inventory, world=self.world)
+        inv_list = InventoryManager.makeInventory(world=self.world, max_starting=self.override_inventory)
         self.invManager = InventoryManager.InventoryManager(inventory=inv_list, parent=self)
         if not self.override_inventory:
             equipment_items = Counter()

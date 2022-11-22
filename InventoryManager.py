@@ -5,6 +5,7 @@ from CommonUtils import *
 from ImageInvButton import ImageInvButton
 from itertools import chain
 import ItemList
+import LocationList
 
 total_equipment = ItemPool.item_groups['ProgressItem'] + ItemPool.item_groups['Song'] + ItemPool.item_groups['DungeonReward'] + [
     'Deku Stick Capacity',
@@ -18,6 +19,7 @@ total_equipment = ItemPool.item_groups['ProgressItem'] + ItemPool.item_groups['S
     'Progressive Wallet',
     'Blue Fire',
     'Deku Nut',
+    'Biggoron Sword'
 ]
 
 gui_ignore_items = [
@@ -117,7 +119,7 @@ gui_positions = [
     'Small Key (Spirit Temple)',
     'Small Key (Gerudo Training Ground)',
     'Small Key (Bottom of the Well)',
-    'Small Key (Gerudo Fortress)',
+    'Small Key (Thieves Hideout)',
 
     'Boss Key (Forest Temple)',
     'Boss Key (Fire Temple)',
@@ -134,6 +136,7 @@ gui_positions = [
 
 child_trade = [
     'Weird Egg',
+    'Pocket Cucco',
     'Zeldas Letter',
 ]
 
@@ -146,28 +149,19 @@ adult_trade = [
     'Broken Sword',
     'Prescription',
     'Eyeball Frog',
+    'Eyedrops',
     'Claim Check',
 ]
 
-item_limits = Counter()
-mq_item_limits = Counter()
-for name, item in chain(ItemPool.vanillaSK.items(), ItemPool.vanillaBK.items()):
-    if "MQ" in name:
-        mq_item_limits[item] += 1
-    else:
-        item_limits[item] += 1
-
-for item in total_equipment:
-    item_limits[item] += 1
-item_limits['Gold Skulltula Token'] += 100
-item_limits['Boss Key (Ganons Castle)'] += 1
-item_limits['Small Key (Gerudo Fortress)'] += 4
+item_limits = []
 
 class InventoryEntry:
     def __init__(self, name, max, current=0):
         self.name = name
         self.max = max
         self.current = current
+    def __repr__(self):
+        return f"{self.name} inventory ({self.current} out of {self.max})"
 
 def orderGuiWidgets(inputwidgets):
     results = []
@@ -308,8 +302,41 @@ def get_small_key_limits(world):
         results[item] = get_item_limit(item, mq_items)
     return results
 
-def makeInventory(max_starting=False, world=None):
+def initItemLimits(world):
     global item_limits
+
+    item_limits = Counter()
+    mq_item_limits = Counter()
+    keys_dict = {k:v for k,v in LocationList.location_table.items() if v[4] and 'Key' in v[4]}
+    for value in keys_dict.values():
+        if "Master Quest" in value[5]:
+            mq_item_limits[value[4]] += 1
+        if "Vanilla" in value[5] or "Master Quest" not in value[5]:
+            item_limits[value[4]] += 1
+
+    for item in total_equipment:
+        skip = False
+        for banned_word in ["Bombchus (", "Bottle with", "Piece of Heart"]:
+            if banned_word in item:
+                skip = True
+                break
+        if item in ["Buy Magic Bean", "Deliver Letter", "Heart Container", "Piece Of Heart", "Triforce Piece"]:
+            skip = True
+        if not skip:
+            item_limits[item] += 1
+    item_limits['Gold Skulltula Token'] += 100
+
+
+def getItemLimits(world):
+    global item_limits
+
+    if len(item_limits) == 0:
+        initItemLimits(world)
+    return item_limits
+
+
+def makeInventory(world, max_starting=False):
+    item_limits = getItemLimits(world)
 
     result = []
     mq_items = get_mq_items(world)

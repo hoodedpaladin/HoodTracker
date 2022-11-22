@@ -16,17 +16,15 @@ except ModuleNotFoundError:
         sys.path.append(ootr_path)
     from World import World
 from Utils import data_path
-from DungeonList import create_dungeons
+from Dungeon import create_dungeons
 import ItemPool
 import TextSettings
 import EntranceShuffle
 import SettingsList
 from Item import ItemFactory
 from Settings import Settings, ArgumentDefaultsHelpFormatter
-import AutoGrotto
 from Region import TimeOfDay
 import gui
-import ExploreManager
 import LocationLogic
 import InventoryManager
 
@@ -71,10 +69,10 @@ def determine_mq_dungeons(world, input_data):
     if 'dungeon_mqs' not in input_data:
         # No data about MQs yet; what do we know?
         # Start with all 12 as vanilla unless it's non-random all-MQ
-        if world.settings.mq_dungeons_random or world.settings.mq_dungeons < 12:
-            input_data['dungeon_mqs'] = []
+        if world.settings.mq_dungeons_mode == 'mq' or (world.settings.mq_dungeons_mode == 'count' and world.settings.mq_dungeons_count == 12):
+            input_data['dungeon_mqs'] = world.dungeon_mq.keys()[:]
         else:
-            input_data['dungeon_mqs'] = [name for name in world.dungeon_mq.keys()]
+            input_data['dungeon_mqs'] = []
 
     for name in world.dungeon_mq:
         world.dungeon_mq[name] = True if name in input_data['dungeon_mqs'] else False
@@ -105,23 +103,42 @@ def generate(input_data, gui_dialog):
         determine_mq_dungeons(world, input_data)
         determine_trials(world)
 
-        if settings.logic_rules == 'glitched':
-            overworld_data = os.path.join(data_path('Glitched World'), 'Overworld.json')
-        else:
-            overworld_data = os.path.join(data_path('World'), 'Overworld.json')
-
         # Compile the json rules based on settings
         world.ensure_tod_access=True
-        world.load_regions_from_json(overworld_data)
+
+        # Load common json rule files (those used regardless of MQ status)
+        if settings.logic_rules == 'glitched':
+            path = 'Glitched World'
+        else:
+            path = 'World'
+        path = data_path(path)
+
+        for filename in ('Overworld.json', 'Bosses.json'):
+            world.load_regions_from_json(os.path.join(path, filename))
+
         create_dungeons(world)
         world.create_internal_locations()
 
         # Populate drop items
         drop_locations = list(filter(lambda loc: loc.type == 'Drop', world.get_locations()))
         for drop_location in drop_locations:
-            item = ItemPool.droplocations[drop_location.name]
-            world.push_item(drop_location, ItemFactory(item, world))
+            world.push_item(drop_location, ItemFactory(drop_location.vanilla_item, world))
             drop_location.locked = True
+        # Populate fixed location items
+        ItemPool.junk_pool[:] = list(ItemPool.junk_pool_base)
+        if world.settings.junk_ice_traps == 'on':
+            ItemPool.junk_pool.append(('Ice Trap', 10))
+        elif world.settings.junk_ice_traps in ['mayhem', 'onslaught']:
+            ItemPool.junk_pool[:] = [('Ice Trap', 1)]
+        (pool, placed_items) = ItemPool.get_pool_core(world)
+        placed_items_count = {}
+        #world.itempool = ItemFactory(pool, world)
+        placed_locations = list(filter(lambda loc: loc.name in placed_items, world.get_locations()))
+        for location in placed_locations:
+            item = placed_items[location.name]
+            placed_items_count[item] = placed_items_count.get(item, 0) + 1
+            world.push_item(location, ItemFactory(item, world))
+            world.get_location(location).locked = True
 
         return world
 
@@ -212,8 +229,11 @@ def autocollect(possible_locations, collected_locations, state):
     move_locs = []
 
     for loc in possible_locations:
-        if loc.name in ItemPool.fixedlocations:
-            collect_items.append(ItemPool.fixedlocations[loc.name])
+        if loc.name == 'Ganon':
+            # Don't hide the wincon!
+            continue
+        if loc.locked:
+            collect_items.append(loc.item.name)
             move_locs.append(loc)
             continue
         if loc.type == 'Event':
@@ -291,7 +311,6 @@ def solve(world, prog_items, starting_region='Root'):
 
 def get_shuffled_exits(settings):
     settings_to_types_dict = {
-        'shuffle_dungeon_entrances': ['Dungeon'],
         'shuffle_grotto_entrances': ['Grotto', 'Grave'],
         'shuffle_overworld_entrances': ['Overworld'],
         'owl_drops': ['OwlDrop'],
@@ -313,7 +332,14 @@ def get_shuffled_exits(settings):
 
     # Complex exceptions
     if 'Grave' in shuffled_types and 'SpecialInterior' in shuffled_types:
-        types.append('SpecialGrave')
+        shuffled_types.append('SpecialGrave')
+
+    if settings.shuffle_bosses != 'off':
+        shuffled_types.extend(['ChildBoss', 'AdultBoss'])
+    if settings.shuffle_dungeon_entrances in ['simple', 'all']:
+        shuffled_types.append('Dungeon')
+    if settings.shuffle_dungeon_entrances in ['all']:
+        shuffled_types.append('DungeonSpecial')
 
     shuffle_these = set()
     for x in EntranceShuffle.entrance_shuffle_table:
@@ -364,7 +390,7 @@ total_equipment = ItemPool.item_groups['ProgressItem'] + ItemPool.item_groups['S
 'Deku Shield',
 'Gold Skulltula Token',
 'Hylian Shield',
-] + list(ItemPool.tradeitems)
+] + list(ItemPool.trade_items)
 
 def getInputData(filename):
     try:
