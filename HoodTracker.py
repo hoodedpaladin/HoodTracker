@@ -103,6 +103,9 @@ def generate(input_data, gui_dialog):
     for id, world in enumerate(worlds):
         determine_mq_dungeons(world, input_data)
         determine_trials(world)
+        dungeons = ['Deku Tree', 'Dodongos Cavern', 'Jabu Jabus Belly', 'Forest Temple', 'Fire Temple', 'Water Temple', 'Shadow Temple', 'Spirit Temple']
+        if (settings.dungeon_shortcuts_choice == 'all'):
+            settings.dungeon_shortcuts = dungeons
 
         # Compile the json rules based on settings
         world.ensure_tod_access=True
@@ -380,6 +383,10 @@ def shuffleExits(world):
     for x in all_exits:
         if x.name in shuffle_these:
             x.shuffled = True
+        if 'Boss Room' in x.connected_region and not x.shuffled:
+            # Unshuffled boss rooms need their hint areas marked
+            other_region = world.get_region(x.connected_region)
+            other_region.dungeon = x.parent_region.dungeon
 
 #What to display to the user as un-collected items
 total_equipment = ItemPool.item_groups['ProgressItem'] + ItemPool.item_groups['Song'] + ItemPool.item_groups['DungeonReward'] + [

@@ -274,6 +274,10 @@ class ExploreManager:
         exit.shuffled = False
         exit.marked_known = True
         exit.connected_region = destination_name
+        if exit in self.boss_door_to_room:
+            # Mark the boss room hint once we've connected it to a dungeon
+            other_exit = self.exits_dict[destination_name]
+            other_exit.parent_region.dungeon = exit.parent_region.dungeon
 
         exit.please_explore = False
         if consumed_exit:
@@ -286,12 +290,17 @@ class ExploreManager:
         consumed_exits = [self.exits_dict[getOppositeExitName(str(x))] for x in exits]
         self.consumed_flag_dirty = True
         for i,x in enumerate(exits):
+            other_index = (i+1)%2
+            other_exit = exits[other_index]
+            consumed_exit = consumed_exits[other_index]
             x.shuffled = False
             x.please_explore = False
             x.marked_known = True
-            other_index = (i+1)%2
-            x.coupled_exit = exits[other_index]
-            x.consumed_exit = consumed_exits[other_index]
+            x.coupled_exit = other_exit
+            x.consumed_exit = consumed_exit
+            if x in self.boss_door_to_room:
+                # Mark the boss room hint once we've connected it to a dungeon
+                other_exit.parent_region.dungeon = x.parent_region.dungeon
             # Destination = destination of the consumed exit
             # (but use the name, i.e. the canonical destination, not the struct)
             match = re.match("(.+) -> (.+)", str(x.consumed_exit))
@@ -327,6 +336,10 @@ class ExploreManager:
 
         assert not exit.shuffled
 
+        region = self.world.get_region(exit.connected_region)
+        if 'Boss Room' in region.name:
+            # No more dungeon hint for an unconnected boss room
+            region.dungeon = None
         exit.shuffled = True
         exit.connected_region = None
         exit.marked_known = False
