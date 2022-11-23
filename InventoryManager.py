@@ -26,7 +26,6 @@ gui_ignore_items = [
     'Bottle with Milk',
     'Deliver Letter',
     'Eyedrops',
-    'Ice Arrows',
     'Bombchus (5)',
     'Bombchus (10)',
     'Bombchus (20)',
@@ -132,6 +131,7 @@ gui_positions = [
 
     'Stone of Agony',
     'Blue Fire',
+    'Ice Arrows',
 ]
 
 child_trade = [
@@ -235,6 +235,8 @@ class InventoryManager:
             # Fixes for buyable + replaceable items
             if x.name in self.item_aliases:
                 results[self.item_aliases[x.name]] += x.current
+        if results['Magic Bean'] >= 1:
+            results['Magic Bean'] = 10
         return results
 
     def update(self, child_item):

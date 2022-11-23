@@ -4,6 +4,7 @@ import os
 import sys
 import re
 import argparse
+import LocationList
 from CommonUtils import *
 import datetime
 
@@ -139,6 +140,22 @@ def generate(input_data, gui_dialog):
             placed_items_count[item] = placed_items_count.get(item, 0) + 1
             world.push_item(location, ItemFactory(item, world))
             world.get_location(location).locked = True
+        a = LocationList.location_table
+
+        if settings.empty_dungeons_mode == 'specific':
+            for k,v in LocationList.location_table.items():
+                empty = False
+                for dungeon in settings.empty_dungeons_specific:
+                    if v[5] and dungeon in v[5]:
+                        empty = True
+                        break
+                if empty:
+                    try:
+                        location = world.get_location(k)
+                        world.push_item(location, ItemFactory('Recovery Heart', world))
+                        location.locked = True
+                    except KeyError:
+                        pass
 
         return world
 
