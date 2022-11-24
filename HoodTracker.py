@@ -71,7 +71,7 @@ def determine_mq_dungeons(world, input_data):
         # No data about MQs yet; what do we know?
         # Start with all 12 as vanilla unless it's non-random all-MQ
         if world.settings.mq_dungeons_mode == 'mq' or (world.settings.mq_dungeons_mode == 'count' and world.settings.mq_dungeons_count == 12):
-            input_data['dungeon_mqs'] = world.dungeon_mq.keys()[:]
+            input_data['dungeon_mqs'] = list(world.dungeon_mq.keys())
         else:
             input_data['dungeon_mqs'] = []
 

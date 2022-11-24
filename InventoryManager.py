@@ -153,7 +153,8 @@ adult_trade = [
     'Claim Check',
 ]
 
-item_limits = []
+item_limits = None
+mq_item_limits = None
 
 class InventoryEntry:
     def __init__(self, name, max, current=0):
@@ -306,6 +307,7 @@ def get_small_key_limits(world):
 
 def initItemLimits(world):
     global item_limits
+    global mq_item_limits
 
     item_limits = Counter()
     mq_item_limits = Counter()
@@ -332,7 +334,7 @@ def initItemLimits(world):
 def getItemLimits(world):
     global item_limits
 
-    if len(item_limits) == 0:
+    if not item_limits:
         initItemLimits(world)
     return item_limits
 
