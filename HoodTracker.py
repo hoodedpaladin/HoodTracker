@@ -54,9 +54,11 @@ def getSettings(input_data, gui_dialog=None):
         settings_string = expectOne(input_data['settings_string'])
     elif args.settings_string is not None:
         settings_string = args.settings_string
+        logging.info(f"User has provided {settings_string} as the settings string in the arguments")
     elif gui_dialog:
         settings_string = gui.DialogSettingsManager.get_settings_string()
         input_data['settings_string'] = [settings_string]
+        logging.info(f"User has input {settings_string} as the settings string")
     if settings_string is None:
         raise Exception("Please provide settings_string as an argument or in the text file")
 
@@ -614,6 +616,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--textmode', action="store_true")
     parser.add_argument('--filename', type=str, default="output.txt")
+    parser.add_argument('--settings_string', help='Provide sharable settings using a settings string. This will override all flags that it specifies.')
     args = parser.parse_args()
 
     # Launch gui or text mode
