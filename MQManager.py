@@ -27,7 +27,7 @@ class MQManager:
         self.update_world(world)
 
         # Don't allow interaction if MQ dungeons are determined
-        if world.settings.mq_dungeons_mode in ['vanilla', 'mq'] or (world.settings.mq_dungeons_mode == 'count' and world.settings.mq_dungeons_count in [0,12]):
+        if world.settings.mq_dungeons_mode in ['vanilla', 'mq', 'specific'] or (world.settings.mq_dungeons_mode == 'count' and world.settings.mq_dungeons_count in [0,12]):
             self.widget.hide()
 
     def clicked(self, checkbox):

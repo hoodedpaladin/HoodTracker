@@ -56,6 +56,7 @@ def getSettings(input_data, gui_dialog=None):
         settings_string = args.settings_string
     elif gui_dialog:
         settings_string = gui.DialogSettingsManager.get_settings_string()
+        input_data['settings_string'] = [settings_string]
     if settings_string is None:
         raise Exception("Please provide settings_string as an argument or in the text file")
 
@@ -72,6 +73,8 @@ def determine_mq_dungeons(world, input_data):
         # Start with all 12 as vanilla unless it's non-random all-MQ
         if world.settings.mq_dungeons_mode == 'mq' or (world.settings.mq_dungeons_mode == 'count' and world.settings.mq_dungeons_count == 12):
             input_data['dungeon_mqs'] = list(world.dungeon_mq.keys())
+        elif world.settings.mq_dungeons_mode == 'specific':
+            input_data['dungeon_mqs'] = world.settings.mq_dungeons_specific[:]
         else:
             input_data['dungeon_mqs'] = []
 
