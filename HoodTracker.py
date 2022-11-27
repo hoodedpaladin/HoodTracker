@@ -49,7 +49,11 @@ def getSettings(input_data, gui_dialog=None):
 
     settings = Settings({})
     settings_string = None
-    assert not (('settings_string' in input_data) and (args.settings_string))
+    if ('settings_string' in input_data) and (args.settings_string):
+        a = expectOne(input_data['settings_string'])
+        b = args.settings_string
+        if a != b:
+            raise Exception(f"Settings string from arguments ({b}) is different from settings string from save file ({a})")
     if 'settings_string' in input_data:
         settings_string = expectOne(input_data['settings_string'])
     elif args.settings_string is not None:
