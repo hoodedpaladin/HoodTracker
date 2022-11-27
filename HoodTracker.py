@@ -4,7 +4,6 @@ import os
 import sys
 import re
 import argparse
-import LocationList
 from CommonUtils import *
 import datetime
 
@@ -28,6 +27,7 @@ from Region import TimeOfDay
 import gui
 import LocationLogic
 import InventoryManager
+import LocationList
 
 class BadSettingsStringException(Exception):
     pass
