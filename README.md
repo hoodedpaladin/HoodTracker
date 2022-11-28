@@ -22,9 +22,8 @@ The left side of the window shows all locations where progression items can be f
 ### Entrance Shuffle
 If you have entrance shuffle on, the upper-right corner will prompt when there are unknown exits. When you take the exit from <first region> to <second region>, note in the dropdown where you actually end up. Knowing the precise OoT-Randomizer name can make a difference - for example, Zora River lets you float downriver to ZR Front, but you can't always reach Zora River from ZR Front.
   
-### Master Quest Selections
-(Secret fourth section!)
-The Master Quest checkboxes show up along the bottom of the screen if you don't have exactly 0 or exactly 12 Master Quest dungeons.
+### Master Quest, Dungeon Shortcuts, Empty Dungeons, and Ganon's Trials Selections
+The checkboxes for these features show up along the bottom of the screen if the settings string doesn't explicitly state what they are.
 
 # Features Support
 Supports:
@@ -34,4 +33,4 @@ Supports:
   - Ganon's trials, dungeon shortcuts and empty dungeons
   - Changing settings string on the fly (not sure how stable this is)
   
-Does not support any number of Ganon's trials besides 0 and 6. Probably does not support glitched logic. The settings string should be generated using OoTR v6.2, otherwise it may not be valid. If there are randomized settings in your settings string, you should fill out the settings as they actually got decided; I'm not sure what will happen otherwise.
+Probably does not support glitched logic. The settings string should be generated using OoTR v7.0, otherwise it may not be valid. If there are randomized settings in your settings string, you should fill out the settings as they actually got decided; I'm not sure what will happen otherwise.
