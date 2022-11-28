@@ -74,29 +74,43 @@ def getSettings(input_data, gui_dialog=None):
     return settings
 
 def determine_mq_dungeons(world, input_data):
-    if 'dungeon_mqs' not in input_data:
-        # No data about MQs yet; what do we know?
-        # Start with all 12 as vanilla unless it's non-random all-MQ
-        if world.settings.mq_dungeons_mode == 'mq' or (world.settings.mq_dungeons_mode == 'count' and world.settings.mq_dungeons_count == 12):
-            input_data['dungeon_mqs'] = list(world.dungeon_mq.keys())
-        elif world.settings.mq_dungeons_mode == 'specific':
-            input_data['dungeon_mqs'] = world.settings.mq_dungeons_specific[:]
-        else:
-            input_data['dungeon_mqs'] = []
+    # What do we know about MQs? Replace input data if we know for sure, otherwise maintain input data
+    if world.settings.mq_dungeons_mode == 'mq' or (world.settings.mq_dungeons_mode == 'count' and world.settings.mq_dungeons_count == 12):
+        input_data['dungeon_mqs'] = list(world.dungeon_mq.keys())
+    elif world.settings.mq_dungeons_mode == 'vanilla' or (world.settings.mq_dungeons_mode == 'count' and world.settings.mq_dungeons_count == 0):
+        input_data['dungeon_mqs'] = []
+    elif world.settings.mq_dungeons_mode == 'specific':
+        input_data['dungeon_mqs'] = world.settings.mq_dungeons_specific[:]
+    elif 'dungeon_mqs' not in input_data:
+        input_data['dungeon_mqs'] = []
 
     for name in world.dungeon_mq:
         world.dungeon_mq[name] = True if name in input_data['dungeon_mqs'] else False
 
-def determine_trials(world):
+def determine_trials(world, input_data):
+    # What do we know about skipped trials? Replace input data if we know for sure, otherwise maintain input data
     if not world.settings.trials_random and world.settings.trials == 0:
-        for x in world.skipped_trials:
-            world.skipped_trials[x] = True
+        input_data['skipped_trials'] = list(world.skipped_trials.keys())
     elif not world.settings.trials_random and world.settings.trials == 6:
-        # All trials enabled is the default setting
-        pass
-    else:
-        # TODO: support selecting which trials are active
-        pass
+        input_data['skipped_trials'] = []
+    elif 'skipped_trials' not in input_data:
+        input_data['skipped_trials'] = []
+
+    for key in world.skipped_trials.keys():
+        world.skipped_trials[key] = key in input_data['skipped_trials']
+
+def determine_dungeon_shortcuts(world, input_data):
+    # What do we know about dungeon shortcuts? Replace input data if we know for sure, otherwise maintain input data
+    if world.settings.dungeon_shortcuts_choice == 'choice':
+        input_data['dungeon_shortcuts'] = world.settings.dungeon_shortcuts[:]
+    elif world.settings.dungeon_shortcuts_choice == 'all':
+        input_data['dungeon_shortcuts'] = list(world.dungeon_mq.keys())
+    elif world.settings.dungeon_shortcuts_choice == 'none':
+        input_data['dungeon_shortcuts'] = []
+    elif 'dungeon_shortcuts' not in input_data:
+        input_data['dungeon_shortcuts'] = []
+
+    world.settings.dungeon_shortcuts = input_data['dungeon_shortcuts'][:]
 
 def generate(input_data, gui_dialog):
     settings = getSettings(input_data, gui_dialog=gui_dialog)
@@ -111,10 +125,8 @@ def generate(input_data, gui_dialog):
 
     for id, world in enumerate(worlds):
         determine_mq_dungeons(world, input_data)
-        determine_trials(world)
-        dungeons = ['Deku Tree', 'Dodongos Cavern', 'Jabu Jabus Belly', 'Forest Temple', 'Fire Temple', 'Water Temple', 'Shadow Temple', 'Spirit Temple']
-        if (settings.dungeon_shortcuts_choice == 'all'):
-            settings.dungeon_shortcuts = dungeons
+        determine_trials(world, input_data)
+        determine_dungeon_shortcuts(world, input_data)
 
         # Compile the json rules based on settings
         world.ensure_tod_access=True

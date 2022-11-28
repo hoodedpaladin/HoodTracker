@@ -127,7 +127,7 @@ class HoodTrackerGui:
         self.populate_locations()
 
 
-        self.mqmanager = MQManager.MQManager(world=self.world, parent=self)
+        self.mqmanager = MQManager.MQManager(world=self.world, parent=self, input_data=self.input_data)
 
         self.find_path_dialog = FindPath.FindPathDialog(all_regions=[x.name for x in self.world.regions], parent=self)
         window = DisplayWindow(invManager=self.invManager, exploreManager=self.exploreManager, locManager=self.locManager, world=self.world, find_path_dialog=self.find_path_dialog, mqmanager=self.mqmanager)
@@ -212,6 +212,7 @@ class HoodTrackerGui:
         self.populate_locations()
         self.exploreManager.show_widgets()
         self.invManager.update_world(self.world)
+        self.mqmanager.update_world(world=self.world, input_data=self.input_data)
 
     # Save the current state of the world / gui managers into input_data
     def save_current_data_to_input_data(self):
