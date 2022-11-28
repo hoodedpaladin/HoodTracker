@@ -107,12 +107,23 @@ def determine_dungeon_shortcuts(world, input_data):
         input_data['dungeon_shortcuts'] = world.settings.dungeon_shortcuts[:]
     elif world.settings.dungeon_shortcuts_choice == 'all':
         input_data['dungeon_shortcuts'] = list(world.dungeon_mq.keys())
-    elif world.settings.dungeon_shortcuts_choice == 'none':
+    elif world.settings.dungeon_shortcuts_choice == 'off':
         input_data['dungeon_shortcuts'] = []
     elif 'dungeon_shortcuts' not in input_data:
         input_data['dungeon_shortcuts'] = []
 
     world.settings.dungeon_shortcuts = input_data['dungeon_shortcuts'][:]
+
+def determine_empty_dungeons(world, input_data):
+    # What do we know about dungeon shortcuts? Replace input data if we know for sure, otherwise maintain input data
+    if world.settings.empty_dungeons_mode == 'specific':
+        input_data['empty_dungeons'] = world.settings.empty_dungeons_specific[:]
+    elif world.settings.empty_dungeons_mode == 'none':
+        input_data['empty_dungeons'] = []
+    elif 'empty_dungeons' not in input_data:
+        input_data['empty_dungeons'] = []
+
+    world.settings.empty_dungeons_specific = input_data['empty_dungeons'][:]
 
 def generate(input_data, gui_dialog):
     settings = getSettings(input_data, gui_dialog=gui_dialog)
@@ -129,6 +140,7 @@ def generate(input_data, gui_dialog):
         determine_mq_dungeons(world, input_data)
         determine_trials(world, input_data)
         determine_dungeon_shortcuts(world, input_data)
+        determine_empty_dungeons(world, input_data)
 
         # Compile the json rules based on settings
         world.ensure_tod_access=True

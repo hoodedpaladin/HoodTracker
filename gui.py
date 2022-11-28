@@ -13,12 +13,15 @@ import InventoryManager
 import ExploreManager
 import LocationManager
 import HoodTracker
-import ItemPool
 import FindPath
-import MQManager
+from MQManager import MQManager
+import DungeonShortcutsManager
+from SkippedTrialsManager import SkippedTrialsManager
+from EmptyDungeonsManager import EmptyDungeonsManager
 
 class DisplayWindow(QtWidgets.QMainWindow):
-    def __init__(self, invManager, exploreManager, locManager, world, mqmanager, find_path_dialog:FindPath.FindPathDialog):
+    def __init__(self, invManager, exploreManager, locManager, world, mqmanager, dungeon_shortcuts_manager,
+                 skipped_trials_manager, empty_dungeons_manager, find_path_dialog:FindPath.FindPathDialog):
         super().__init__()
         self.world = world
         self.find_path_dialog = find_path_dialog
@@ -46,6 +49,9 @@ class DisplayWindow(QtWidgets.QMainWindow):
         mqsplit = QtWidgets.QVBoxLayout()
         mqsplit.addWidget(prevwidget)
         mqsplit.addWidget(mqmanager.widget)
+        mqsplit.addWidget(dungeon_shortcuts_manager.widget)
+        mqsplit.addWidget(skipped_trials_manager.widget)
+        mqsplit.addWidget(empty_dungeons_manager.widget)
 
         fullcanvas = QtWidgets.QWidget()
         fullcanvas.setLayout(mqsplit)
@@ -127,10 +133,21 @@ class HoodTrackerGui:
         self.populate_locations()
 
 
-        self.mqmanager = MQManager.MQManager(world=self.world, parent=self, input_data=self.input_data)
+        self.mqmanager = MQManager(world=self.world, parent=self, input_data=self.input_data)
+        self.dungeon_shortcuts_manager = DungeonShortcutsManager.DungeonShortcutsManager(world=self.world, parent=self, input_data=self.input_data)
+        self.skipped_trials_manager = SkippedTrialsManager(world=self.world, parent=self, input_data=self.input_data)
+        self.empty_dungeons_manager = EmptyDungeonsManager(world=self.world, parent=self, input_data=self.input_data)
 
         self.find_path_dialog = FindPath.FindPathDialog(all_regions=[x.name for x in self.world.regions], parent=self)
-        window = DisplayWindow(invManager=self.invManager, exploreManager=self.exploreManager, locManager=self.locManager, world=self.world, find_path_dialog=self.find_path_dialog, mqmanager=self.mqmanager)
+        window = DisplayWindow(invManager=self.invManager,
+                               exploreManager=self.exploreManager,
+                               locManager=self.locManager,
+                               world=self.world,
+                               find_path_dialog=self.find_path_dialog,
+                               mqmanager=self.mqmanager,
+                               dungeon_shortcuts_manager=self.dungeon_shortcuts_manager,
+                               skipped_trials_manager=self.skipped_trials_manager,
+                               empty_dungeons_manager=self.empty_dungeons_manager)
         self.window = window
         window.find_path_action.triggered.connect(self.launch_pathfind_dialog)
         window.change_settings_action.triggered.connect(self.launch_settingsstring_dialog)
@@ -180,6 +197,7 @@ class HoodTrackerGui:
         self.output_data = HoodTracker.solve(self.world, prog_items=prog_items)
         self.locManager.updateLocationPossible(self.output_data['possible_locations'], self.output_data['allkeys_possible_locations'])
         self.locManager.updateLocationsIgnored(self.world)
+        self.skipped_trials_manager.update_visibility(world=self.world, input_data=self.input_data)
         self.exploreManager.show_widgets()
 
     def launch_pathfind_dialog(self):
@@ -212,7 +230,10 @@ class HoodTrackerGui:
         self.populate_locations()
         self.exploreManager.show_widgets()
         self.invManager.update_world(self.world)
-        self.mqmanager.update_world(world=self.world, input_data=self.input_data)
+        self.mqmanager.update_gui_from_world(world=self.world, input_data=self.input_data)
+        self.dungeon_shortcuts_manager.update_gui_from_world(world=self.world, input_data=self.input_data)
+        self.skipped_trials_manager.update_gui_from_world(world=self.world, input_data=self.input_data)
+        self.empty_dungeons_manager.update_gui_from_world(world=self.world, input_data=self.input_data)
 
     # Save the current state of the world / gui managers into input_data
     def save_current_data_to_input_data(self):
@@ -222,11 +243,12 @@ class HoodTrackerGui:
         self.input_data['known_exits'] = output_known_exits
         self.input_data['paired_exits'] = output_known_exit_pairs
 
-    def update_mqs(self, dungeon_mqs):
+    def update_input_information(self, key, data):
+        # TODO: not all of these really need the world to be regenerated, if you handle the settings changes better
         # Route the "output" information to the input again so it isn't lost
         self.save_current_data_to_input_data()
         # Apply changes to the input data
-        self.input_data['dungeon_mqs'] = [name for name in dungeon_mqs if dungeon_mqs[name]]
+        self.input_data[key] = data
         # Regenerate the world again with new settings and send it to the GUI elements
         self.init_world()
         self.update_world()

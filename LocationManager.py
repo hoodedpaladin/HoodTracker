@@ -122,6 +122,9 @@ def locationIsIgnored(world, location):
     if not world.settings.shuffle_medigoron_carpet_salesman:
         if location.name == "GC Medigoron":
             return True
+    if location.dungeon:
+        if location.dungeon.name in world.settings.empty_dungeons_specific:
+            return True
     return False
 
 class LocationCategory(QStandardItem):
