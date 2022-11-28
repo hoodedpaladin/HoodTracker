@@ -1,8 +1,13 @@
 # HoodTracker
 A tracker for OoT-Randomizer which uses its logic and handles entrance shuffling
 
-### How To Run
+### How To Install And Run
 You need Python 3.8+ installed, and the PySide2 library ("pip install PySide2" will do this.)
+The OoTRandomizer code is included as a submodule, and needs to be in place for this to run. So when you git clone this project make sure to use
+```shell
+git clone --recurse-submodules https://github.com/hoodedpaladin/HoodTracker.git
+```
+
 Then run
 ```shell
 python HoodTracker.py
