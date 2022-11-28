@@ -71,6 +71,8 @@ def getSettings(input_data, gui_dialog=None):
         settings.update_with_settings_string(settings_string)
     except Exception:
         raise BadSettingsStringException("{} is not a valid settings string".format(settings_string))
+    if settings.starting_age not in ['child', 'adult']:
+        raise Exception("Please set starting age to Child or Adult, then try again.")
     return settings
 
 def determine_mq_dungeons(world, input_data):
