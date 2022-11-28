@@ -28,10 +28,10 @@ The Master Quest checkboxes show up along the bottom of the screen if you don't 
 
 # Features Support
 Supports:
-  - OoTR release 6.2
+  - OoTR release 7.0
   - Entrance shuffle
   - Master Quest dungeons
-  - Ganon's Trials 0 or 6
+  - Ganon's trials, dungeon shortcuts and empty dungeons
   - Changing settings string on the fly (not sure how stable this is)
   
 Does not support any number of Ganon's trials besides 0 and 6. Probably does not support glitched logic. The settings string should be generated using OoTR v6.2, otherwise it may not be valid. If there are randomized settings in your settings string, you should fill out the settings as they actually got decided; I'm not sure what will happen otherwise.
