@@ -75,9 +75,9 @@ def doWeWantThisLoc(loc, world):
     # Events / drops / gossipstones / fixed locations are auto-collected
     if loc.name == 'Ganon':
         return True
-    if loc.type in ('Event', 'HintStone', 'Drop'):
+    if loc.type in ('Event', 'HintStone', 'Drop', 'Hint'):
         return False
-    if loc.locked:
+    if loc.locked and loc.item.name not in HoodTracker.drops_we_are_interested_in:
         return False
     # We do not need non-progression deku scrubs unless scrubsanity or grotto shuffle is on
     if world.settings.shuffle_scrubs == 'off' and not world.settings.shuffle_grotto_entrances:

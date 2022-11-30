@@ -29,6 +29,8 @@ import LocationLogic
 import InventoryManager
 import LocationList
 
+drops_we_are_interested_in = 'Gold Skulltula Token'
+
 class BadSettingsStringException(Exception):
     pass
 
@@ -287,7 +289,7 @@ def autocollect(possible_locations, collected_locations, state):
         if loc.name == 'Ganon':
             # Don't hide the wincon!
             continue
-        if loc.locked:
+        if loc.locked and loc.item.name not in drops_we_are_interested_in:
             collect_items.append(loc.item.name)
             move_locs.append(loc)
             continue
