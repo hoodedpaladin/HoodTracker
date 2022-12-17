@@ -132,6 +132,7 @@ gui_positions = [
     'Stone of Agony',
     'Blue Fire',
     'Ice Arrows',
+    'Heart Container',
 ]
 
 child_trade = [
@@ -238,6 +239,8 @@ class InventoryManager:
                 results[self.item_aliases[x.name]] += x.current
         if results['Magic Bean'] >= 1:
             results['Magic Bean'] = 10
+        if 'Heart Container' in results:
+            results['Piece of Heart'] = results['Heart Container'] * 4
         return results
 
     def update(self, child_item):
@@ -329,6 +332,7 @@ def initItemLimits(world):
         if not skip:
             item_limits[item] += 1
     item_limits['Gold Skulltula Token'] += 100
+    item_limits['Heart Container'] += 17
 
 
 def getItemLimits(world):

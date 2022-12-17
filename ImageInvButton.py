@@ -87,6 +87,7 @@ imageNamesDict = {
     'Adult Trade': ['OoT_Weird_Egg_Icon.png', 'OoT_Cojiro_Icon.png', 'OoT_Odd_Mushroom_Icon.png', 'OoT_Odd_Potion_Icon.png', 'OoT_Poachers_Saw_Icon.png', 'OoT_Broken_Giants_Knife_Icon.png', 'OoT_Prescription_Icon.png', 'OoT_Eyeball_Frog_Icon.png', "World's_Finest_Eye_Drops_-_OOT64_icon.png", 'OoT_Claim_Check_Icon.png'],
     'Child Trade': ['OoT_Weird_Egg_Icon.png', 'Pocket_Cucco_-_OOT64_icon.png', 'OoT_Zeldas_Letter_Icon.png'],
     'Ice Arrows': 'Ice_Arrow_-_OOT64_icon.png',
+    'Heart Container': 'Heart_Container_-_OOT64_icon.png',
 }
 
 helperTextDict = {
