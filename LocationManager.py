@@ -111,7 +111,10 @@ def itemMaxed(world, itemname):
     maximum = world.max_progressions[itemname]
     return current >= maximum
 
+hardcoded_ignore = set(['Links Pocket'])
 def locationIsIgnored(world, location):
+    global hardcoded_ignore
+
     if location.name in world.settings.disabled_locations:
         return True
     if getattr(location, 'shop_non_progression', False):
@@ -125,6 +128,8 @@ def locationIsIgnored(world, location):
     if location.dungeon:
         if location.dungeon.name in world.settings.empty_dungeons_specific:
             return True
+    if location.name in hardcoded_ignore:
+        return True
     return False
 
 class LocationCategory(QStandardItem):
